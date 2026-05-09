@@ -1,0 +1,119 @@
+小白开发文档（NFT Launchpad Kit）
+=============================
+
+文档目的：
+- 用最通俗的中文，带你从零到一跑起来这个项目，并理解合约里“高级功能”的用途与调用方式；你可以把这段经历写到简历里。
+
+一、项目总览
+- 仓库位置：d:\Desktop\MyProjects\NFT_Launchpad_Kit\scaffold-alchemy-main
+- 工作区结构：Yarn Workspaces（一个仓库里有多个包）
+  - packages/hardhat：智能合约与脚本
+  - packages/nextjs：前端（Next.js 14 App Router）
+
+二、环境准备
+- 系统：Windows
+- Node 版本：>= 18.18.0（建议 18 或 20）
+- 包管理器：Yarn 3（已在项目中配置）
+
+三、常用命令（在不同目录运行）
+- 合约工作区：d:\Desktop\MyProjects\NFT_Launchpad_Kit\scaffold-alchemy-main\packages\hardhat
+  - 编译：`yarn compile`
+  - 测试：`yarn test`
+- 前端工作区：d:\Desktop\MyProjects\NFT_Launchpad_Kit\scaffold-alchemy-main\packages\nextjs
+  - 开发启动：`yarn dev`（已设置端口为 56900）
+
+四、环境变量（不填也能本地跑）
+- 根目录有 `.env.example` 提示需要哪些变量（例如 `ALCHEMY_API_KEY`、`PRIVATE_KEY` 等）
+- 本地开发可以先不填；部署或连接测试网/主网时再按需填写。
+
+五、智能合约（核心文件）
+- 路径：packages/hardhat/contracts/NFTLaunchpadKit.sol
+- 合约特点：
+  1）白名单（Merkle）
+  2）荷兰拍卖（价格线性下降）
+  3）EIP‑2981 版税标准
+  4）两种签名授权铸造（传统消息签名 + EIP‑712 结构化签名）
+  5）紧急暂停（Pausable）
+  6）资金按比例拆分提现（团队分账）
+
+六、函数级讲解（关键函数）
+- `setSaleState(bool _newState)`：打开或关闭公开售卖。打开后才允许普通 `mint`。
+- `mint(uint256 _quantity)`：公开售卖铸造；会检查是否已开售、是否超出总量、是否超出每钱包限购、是否付够钱。
+- 白名单相关：
+  - `setAllowlistMerkleRoot(bytes32 root)`：配置白名单的“树根”。
+  - `setAllowlistSaleState(bool)`：打开/关闭白名单售卖。
+  - `mintAllowlist(uint256 _quantity, bytes32[] proof)`：白名单铸造；`proof` 是前端生成的默克尔证明，表示“我在白名单里”。
+- 荷兰拍卖相关：
+  - `configureDutchAuction(uint256 startPrice, uint256 endPrice, uint256 startTime, uint256 duration)`：配置拍卖起价、最低价、开始时间与总时长。
+  - `currentAuctionPrice()`：当前拍卖价格（未开始用起始价，结束后用最低价，中间线性下降）。
+  - `mintDutchAuction(uint256 _quantity)`：按当前拍卖价格铸造。
+- 版税：
+  - `setDefaultRoyalty(address receiver, uint96 feeNumerator)`：设置默认版税接收地址与比例；例如 500 表示 5%。
+- 签名授权铸造：
+  - 传统签名 `mintWithSignature(quantity, maxMint, deadline, signature)`：后端用可信签名者对消息签名（包含用户地址、数量、上限、过期时间、合约地址、链ID），前端带签名来铸造。
+  - EIP‑712 结构化签名 `mintWithSignature712(quantity, maxMint, deadline, signature)`：更专业、更安全；后端按标准类型签名，前端带签名来铸造。
+- 紧急暂停：
+  - `pause()` / `unpause()`：管理员暂停/恢复合约，暂停后所有铸造入口会直接拒绝，保障安全。
+- 按比例提现（团队分账）：
+  - `setPayoutRecipients(address[] recipients, uint256[] bps)`：设置多个收款地址及其比例（单位 bps，10000=100%）。总和必须等于 10000。
+  - `withdrawSplit()`：把合约余额按比例打到对应地址。
+
+七、测试（如何验证功能）
+- 测试文件：packages/hardhat/test/NFTLaunchpadKit.advanced.ts
+- 运行：在 hardhat 目录执行 `yarn test`
+- 测试覆盖：
+  1）公开售卖铸造（包含暂停保护）
+  2）EIP‑2981 版税查询
+  3）白名单铸造（简化的单叶证明）
+  4）荷兰拍卖价格与铸造
+  5）传统签名授权铸造（抗重放）
+  6）EIP‑712 结构化签名铸造
+  7）按比例提现（分账）
+
+八、前端（如何跑起来）
+- 进入前端目录：packages/nextjs
+- 启动：`yarn dev`
+- 访问：浏览器打开 `http://localhost:56900/`
+- 注意：首次启动会看到 Node 的一个“模块类型”警告，可以忽略（或给 package.json 加 `"type": "module"`）。
+
+九、如何在前端集成合约（思路）
+- 前端里会读取 `packages/nextjs/contracts/deployedContracts.ts`（由脚本生成）获取地址与 ABI（我们也可以把 ABI 直接导入）。
+- 使用 `wagmi` 或 `@account-kit/react` 进行钱包连接与合约调用：
+  - 公售：调用 `mint(数量)` 并支付 `mintPrice * 数量`
+  - 白名单：上传后端生成的 `proof` 调 `mintAllowlist`
+  - 拍卖：显示 `currentAuctionPrice()`，按该价调 `mintDutchAuction`
+  - 签名：从后端拿签名，调用 `mintWithSignature` 或 `mintWithSignature712`
+  - 分账：管理员在后端面板设置分账参数，执行 `withdrawSplit`
+
+十、生产实战建议（你可以写到简历里）
+- 安全：
+  - 使用 `ReentrancyGuard` 防止重入攻击。
+  - 使用 `Pausable` 提供紧急开关，出现异常能快速止损。
+  - 采用 EIP‑712 结构化签名，防重放与更标准化的签名域分离。
+  - 白名单使用 Merkle 树，气体开销低、易维护。
+- 标准与兼容：
+  - 集成 EIP‑2981 版税，市场统一识别。
+  - `supportsInterface` 正确声明接口，兼容性更好。
+- 工具链：
+  - Hardhat + Ethers v6 + OpenZeppelin v5，现代化合约开发栈。
+  - 单元测试覆盖关键路径，含拍卖、签名、暂停、分账。
+
+十一、常见问题（FAQ）
+- Q：为什么我本地不填 ALCHEMY_API_KEY 也能跑？
+  A：本地开发跑前端页面不强制连链；真要连测试网/主网再填即可。
+- Q：白名单的 `proof` 怎么来？
+  A：后端用你的地址列表生成 Merkle 树，给每个地址生成对应的证明，前端拿这个 `proof` 去铸造。
+- Q：EIP‑712 的签名怎么生成？
+  A：后端按固定 `domain` 与 `types` 结构（文档和测试里都有示例），用可信签名者私钥签名，前端拿到 `signature` 调用合约。
+- Q：分账比例为什么必须等于 10000？
+  A：用 bps（基点）表达比例，便于整数计算；10000 表示 100%。
+
+十二、你可以这样写在简历里
+- 负责设计与实现 NFT Launchpad：
+  - 白名单（Merkle）、公开售卖、荷兰拍卖（动态定价）、签名授权铸造（含 EIP‑712）、EIP‑2981 版税；
+  - 增强安全：重入防护 + 暂停机制；
+  - 团队资金功能：按比例拆分提现；
+  - 使用 Hardhat/Ethers/OpenZeppelin，完整单测覆盖关键功能，用例全部通过。
+
+如果你希望，我能继续把上述功能集成到一个“高级发售面板”前端页面（白名单校验、拍卖倒计时、签名铸造、分账管理），并一步步带你联调部署到测试网。
+

@@ -1,0 +1,10 @@
+{
+  "name": "NFT Launchpad Kit",
+  "description": "Professional NFT Minting Platform — Whitelist, Dutch Auction, Signatures & More",
+  "iconPath": "logo.svg",
+  "short_name": "NFT Launchpad",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

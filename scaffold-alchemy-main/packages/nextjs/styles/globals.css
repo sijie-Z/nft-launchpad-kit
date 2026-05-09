@@ -1,0 +1,205 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root,
+[data-theme] {
+  background: oklch(var(--b2));
+}
+
+body {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+p {
+  margin: 1rem 0;
+}
+
+.btn {
+  @apply shadow-md;
+}
+
+.btn.btn-ghost {
+  @apply shadow-none;
+}
+
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--bc) / 0.25);
+}
+
+/* ─── Smooth number input ─── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+  height: 28px;
+}
+
+/* ─── Card hover effect ─── */
+.card-hover {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -12px oklch(var(--bc) / 0.1);
+}
+
+/* ─── Gradient text ─── */
+.text-gradient {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(135deg, oklch(var(--p)), oklch(var(--s)));
+}
+
+/* ─── Glow effect ─── */
+.glow-primary {
+  box-shadow:
+    0 0 20px oklch(var(--p) / 0.3),
+    0 0 60px oklch(var(--p) / 0.1);
+}
+.glow-success {
+  box-shadow:
+    0 0 20px oklch(var(--su) / 0.3),
+    0 0 60px oklch(var(--su) / 0.1);
+}
+
+/* ─── Badge pulse animation ─── */
+@keyframes badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.badge-pulse {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Toast animation ─── */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.toast > .alert {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* ─── Progress bar smooth ─── */
+.progress {
+  transition: width 0.5s ease-out;
+}
+
+/* ─── Reusable input ─── */
+.Inp {
+  @apply w-full rounded-xl border border-base-content/10 bg-base-200/30 px-3 py-2.5 text-sm;
+  @apply focus:outline-none focus:border-primary transition-colors;
+}
+
+/* ─── Noise texture overlay ─── */
+.noise-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ─── Slide up animation ─── */
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ─── Fade in animation ─── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ─── Mobile safe area ─── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ─── Tap highlight removal for mobile ─── */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ─── Focus visible for accessibility ─── */
+:focus-visible {
+  outline: 2px solid oklch(var(--p));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Reduced motion for accessibility ─── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-pulse {
+    animation: none !important;
+  }
+  .animate-spin {
+    animation: none !important;
+  }
+  .loading {
+    animation: none !important;
+  }
+}
+
+/* ─── Slide up utility class ─── */
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}

@@ -1,0 +1,6 @@
+{
+  "mainnetName": "ethereum",
+  "mainnetChainId": 1,
+  "testnetChainId": 11155111,
+  "testnetChainName": "sepolia"
+}
