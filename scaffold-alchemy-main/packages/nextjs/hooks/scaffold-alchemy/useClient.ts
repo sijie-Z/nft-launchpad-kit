@@ -10,7 +10,7 @@ export const useClient = (
   },
 ) => {
   const { logout } = useLogout();
-  let client, address;
+  let client: any, address: any;
   try {
     const val = useSmartAccountClient(config);
     client = val.client;
@@ -20,7 +20,7 @@ export const useClient = (
     logout();
   }
   const alchemy = new Alchemy({
-    url: client?.transport.alchemyRpcUrl,
+    url: client?.transport?.alchemyRpcUrl,
     network: RPC_CHAIN_NAMES[scaffoldConfig.targetNetworks[0].id] as Network,
   });
   const enhancedApiDecorator = alchemyEnhancedApiActions(alchemy);

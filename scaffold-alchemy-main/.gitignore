@@ -39,4 +39,4 @@ out
 
 # coverage
 coverage
-coverage.json
+coverage.json*.db

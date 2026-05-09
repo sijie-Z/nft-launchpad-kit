@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 用户（钱包连接后自动创建）
+model User {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedCollections Collection[]
+  mintRecords     MintRecord[]
+}
+
+// NFT 集合
+model Collection {
+  id              String   @id @default(cuid())
+  name            String
+  symbol          String
+  description     String?
+  coverImage      String?
+  contractAddress String?  @unique
+  chainId         Int      @default(11155111)
+  maxSupply       Int
+  mintPrice       String
+  maxPerWallet    Int
+  status          String   @default("draft")
+  ownerId         String
+
+  baseURI         String?
+  preRevealURI    String?
+  revealSeed      Int?
+
+  platformFeeBps  Int      @default(500)
+  royaltyBps      Int      @default(500)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner           User     @relation(fields: [ownerId], references: [id])
+  mintRecords     MintRecord[]
+  claimPhases     ClaimPhase[]
+  whitelistEntries WhitelistEntry[]
+}
+
+// 铸造记录
+model MintRecord {
+  id            String   @id @default(cuid())
+  txHash        String
+  minterAddress String
+  tokenId       Int?
+  quantity      Int
+  totalPaid     String
+  mintMode      String
+  chainId       Int      @default(11155111)
+  collectionId  String
+  userId        String?
+  createdAt     DateTime @default(now())
+
+  collection    Collection @relation(fields: [collectionId], references: [id])
+  user          User?      @relation(fields: [userId], references: [id])
+}
+
+// Claim Phase 配置
+model ClaimPhase {
+  id                     String   @id @default(cuid())
+  phaseId                Int
+  startTimestamp         DateTime
+  maxSupply              Int
+  quantityLimitPerWallet Int
+  currency               String   @default("0x0000000000000000000000000000000000000000")
+  pricePerToken          String
+  merkleRoot             String?
+  metadata               String?
+  collectionId           String
+  createdAt              DateTime @default(now())
+
+  collection             Collection @relation(fields: [collectionId], references: [id])
+
+  @@unique([collectionId, phaseId])
+}
+
+// 白名单条目
+model WhitelistEntry {
+  id           String   @id @default(cuid())
+  address      String
+  maxMint      Int      @default(1)
+  collectionId String
+  createdAt    DateTime @default(now())
+
+  collection   Collection @relation(fields: [collectionId], references: [id])
+
+  @@unique([collectionId, address])
+}
+
+// 平台配置
+model PlatformConfig {
+  id             String @id @default("default")
+  platformFeeBps Int    @default(500)
+  platformWallet String?
+  updatedAt      DateTime @updatedAt
+}
