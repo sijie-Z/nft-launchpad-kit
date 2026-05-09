@@ -1,6 +1,6 @@
 # NFT Launchpad Kit — 项目文档
 
-> 最后更新：2026-05-09（v18 — 布尔打包 + 签名 nonce 防重放）
+> 最后更新：2026-05-10（v19 — 后端 API + 数据库 + 产品级页面）
 
 ---
 
@@ -11,18 +11,22 @@
 | 模块 | 状态 | 完成度 | 说明 |
 |------|------|--------|------|
 | **智能合约** | ✅ 完成 | 99% | 6 种铸造模式 + Phased Claim Conditions + Factory Clone + SafeERC20 + 布尔打包 + 签名 nonce、37 事件、33 自定义错误、82 测试、已部署 Sepolia |
-| **测试套件** | ✅ 完成 | 98% | 74 个测试用例（9 核心 + 20 审计 + 32 Claim + 13 Factory），Gas 报告正常 |
+| **后端 API** | ✅ 完成 | 85% | 7 个 REST 端点（集合、铸造记录、白名单、认证、分析、IPFS），Prisma + SQLite |
+| **数据库** | ✅ 完成 | 90% | 6 个模型（User、Collection、MintRecord、ClaimPhase、WhitelistEntry、PlatformConfig） |
+| **测试套件** | ✅ 完成 | 98% | 82 个测试用例（9 核心 + 20 审计 + 32 Claim + 8 压测 + 13 Factory） |
 | **部署脚本** | ✅ 完成 | 100% | 已部署到 Sepolia 测试网，Factory + Implementation 双合约 |
-| **前端铸造页面** | ⚠️ 可用 | 93% | 含网络守卫、集合信息、合约信息、实时活动流、交易状态、成功弹窗、Gas 估算、友好错误提示、输入验证 |
-| **前端管理后台** | ⚠️ 可用 | 94% | 仪表盘（含分析） + 事件日志（含筛选） + 8 管理面板 + 白名单管理器 + 确认对话框 + 输入验证 + 权限检查 |
+| **前端铸造页面** | ✅ 完成 | 95% | 含网络守卫、集合信息、合约信息、实时活动流、交易状态、成功弹窗、Gas 估算、友好错误提示、输入验证 |
+| **前端管理后台** | ✅ 完成 | 94% | 仪表盘（含分析） + 事件日志（含筛选） + 8 管理面板 + 白名单管理器 + 确认对话框 + 输入验证 + 权限检查 |
+| **前端产品页面** | ✅ 完成 | 80% | 集合发现页、集合详情页、我的 NFT 页 |
 | **前端工具库** | ✅ 完成 | 99% | 17 个组件 + 3 个工具库，全部 viem 兼容 |
 | **CI/CD** | ✅ 完成 | 85% | GitHub Actions 测试+构建+部署流水线 |
-| **文档** | ✅ 完成 | 90% | 本文档 + 小白开发文档 |
+| **文档** | ✅ 完成 | 90% | 本文档 + 小白开发文档 + README |
 | **合约安全审计** | ⚠️ 初步 | 30% | Slither 静态分析通过（39 项均为可接受/误报），未经过专业第三方审计 |
 | **测试网部署** | ✅ 完成 | 100% | Sepolia 测试网：NFTLaunchpadKit (0x7597D0) + Factory (0x1e3200) |
-| **前端生产构建** | ✅ 完成 | 100% | `next build` 已通过，无类型错误 |
-| **Etherscan 验证** | ❌ 未做 | 0% | 合约源码未验证 |
-| **子图/索引** | ❌ 未做 | 0% | 无链上数据索引 |
+| **前端生产构建** | ✅ 完成 | 100% | `next build` 已通过 |
+| **GitHub 仓库** | ✅ 完成 | 100% | https://github.com/sijie-Z/nft-launchpad-kit |
+| **Etherscan 验证** | ❌ 未做 | 0% | 需要 Etherscan API Key |
+| **子图/索引** | ❌ 未做 | 0% | 需要 The Graph 账号 |
 
 ### 1.2 诚实的问题清单
 
@@ -74,7 +78,42 @@
 - ✅ Merkle 工具升级 — 支持分级白名单（per-wallet quantity），参考 thirdweb ClaimCondition
 - ✅ Admin 仪表盘增强 — 独立铸造者数、近 100 区块活跃度、人均铸造量、收入 USD 估值
 
-### 1.3 Sepolia 测试网部署（v17）
+### 1.3 后端 API 与数据库（v19）
+
+**技术栈：** Prisma 5 + SQLite + Next.js API Routes
+
+**数据库模型：**
+
+| 模型 | 说明 |
+|------|------|
+| User | 钱包地址用户，自动创建 |
+| Collection | NFT 集合（名称、合约地址、状态、配置） |
+| MintRecord | 铸造记录（txHash、数量、模式、时间） |
+| ClaimPhase | Claim Conditions 阶段配置 |
+| WhitelistEntry | 白名单条目（地址 + 最大铸造数） |
+| PlatformConfig | 平台级配置（手续费、平台钱包） |
+
+**API 端点：**
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/collections` | GET/POST | 集合列表/创建 |
+| `/api/collections/[id]` | GET/PUT/DELETE | 集合详情/更新/删除 |
+| `/api/mint-records` | GET/POST | 铸造记录查询/记录 |
+| `/api/whitelist` | GET/POST/DELETE | 白名单管理（批量） |
+| `/api/auth` | POST | 钱包签名认证 |
+| `/api/analytics` | GET | 平台/集合级统计 |
+| `/api/ipfs` | POST | IPFS 元数据上传（Pinata） |
+
+**产品页面：**
+
+| 页面 | 路由 | 说明 |
+|------|------|------|
+| 集合发现 | `/collections` | 卡片展示、状态筛选 |
+| 集合详情 | `/collections/[id]` | 铸造 UI + 最近铸造 + 统计 |
+| 我的 NFTs | `/my-nfts` | 个人铸造历史 |
+
+### 1.4 Sepolia 测试网部署（v17）
 
 | 合约 | 地址 | Gas | Etherscan |
 |------|------|-----|-----------|
@@ -85,7 +124,7 @@
 - 网络: Sepolia (chainId: 11155111)
 - 配置: maxSupply=10000, maxPerWallet=5, mintPrice=0.01 ETH
 
-### 1.4 v11 全面 Bug 审计报告
+### 1.5 v11 全面 Bug 审计报告
 
 **审计范围：** 智能合约、前端组件、工具库、测试套件
 **发现 Bug：** 40 个（合约 13 + 前端 27）
