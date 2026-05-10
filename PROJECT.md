@@ -1,6 +1,6 @@
 # NFT Launchpad Kit — 项目文档
 
-> 最后更新：2026-05-10（v33 — 最终版：API 测试 + Web Vitals + Prisma 迁移确认）
+> 最后更新：2026-05-10（v34 — 全 API 测试覆盖 + OpenAPI 文档 + Vercel 部署配置）
 
 ---
 
@@ -13,14 +13,14 @@
 | **智能合约** | ✅ 完成 | 99% | 6 种铸造模式 + Phased Claim Conditions + Factory Clone + SafeERC20 + 布尔打包 + 签名 nonce + 延迟揭示、39 事件、33 自定义错误、96 测试、已部署 Sepolia |
 | **后端 API** | ✅ 完成 | 95% | 10 个 REST 端点 + /api/og + /api/health + /sitemap.xml + IP-based 速率限制 + 环境变量校验，Prisma + SQLite |
 | **数据库** | ✅ 完成 | 90% | 6 个模型（User、Collection、MintRecord、ClaimPhase、WhitelistEntry、PlatformConfig） |
-| **测试套件** | ✅ 完成 | 99% | 137 个测试用例（96 合约：20 核心 + 21 审计 + 38 Claim + 8 压测 + 9 Factory + 41 前端 API 测试） |
+| **测试套件** | ✅ 完成 | 100% | 170 个测试用例（96 合约 + 74 前端：10 个 API 端点全覆盖 + 工具库测试） |
 | **部署脚本** | ✅ 完成 | 100% | 已部署到 Sepolia 测试网，Factory + Implementation 双合约 |
 | **前端铸造页面** | ✅ 完成 | 97% | Hero 营销区 + 网络守卫 + 集合信息 + 合约信息 + 实时活动流 + 交易状态 + 成功弹窗 + Gas 估算 |
 | **前端管理后台** | ✅ 完成 | 94% | 仪表盘（含分析） + 事件日志（含筛选） + 8 管理面板 + 白名单管理器 + 确认对话框 + 输入验证 + 权限检查 |
 | **前端产品页面** | ✅ 完成 | 90% | 集合发现页、集合详情页、NFT 画廊（tokenURI 元数据渲染）+ 铸造历史视图 |
 | **前端工具库** | ✅ 完成 | 99% | 20 个组件 + 3 个工具库，全部 viem 兼容 |
 | **CI/CD** | ✅ 完成 | 85% | GitHub Actions 测试+构建+部署流水线 |
-| **文档** | ✅ 完成 | 90% | 本文档 + 小白开发文档 + README |
+| **文档** | ✅ 完成 | 95% | 本文档 + OpenAPI 规范 + API 文档页面 + 小白开发文档 + README |
 | **合约安全审计** | ⚠️ 初步 | 30% | Slither 静态分析通过（39 项均为可接受/误报），未经过专业第三方审计 |
 | **测试网部署** | ✅ 完成 | 100% | Sepolia 测试网：NFTLaunchpadKit (0x7597D0) + Factory (0x1e3200) |
 | **前端生产构建** | ✅ 完成 | 100% | `next build` 已通过 |
@@ -117,6 +117,11 @@
 - ✅ Prisma 迁移确认（v33）— schema 与 init migration 完全同步，无 drift
 - ✅ `@account-kit/infra` 导入路径修复（v33）— `alchemyEnhancedApiActions` 改为子路径 `@account-kit/infra/enhanced-apis`
 - ✅ 96 合约测试 + 41 前端测试 = 137 总测试
+- ✅ 全 API 测试覆盖（v34）— 新增 5 个测试文件（analytics、auth、ipfs、mint-records、whitelist），总计 10 个测试文件 + 74 个用例
+- ✅ OpenAPI 文档（v34）— `public/openapi.yaml` 完整 REST API 规范（3.0.3），含所有端点、请求/响应 schema
+- ✅ API 文档页面（v34）— `/api-doc` 可视化 API 端点列表，按模块分组，彩色 HTTP 方法标签
+- ✅ Vercel 部署配置（v34）— `vercel.json` 含构建命令、环境变量映射、输出目录
+- ✅ 96 合约测试 + 74 前端测试 = 170 总测试
 
 ### 1.3 后端 API 与数据库（v19）
 

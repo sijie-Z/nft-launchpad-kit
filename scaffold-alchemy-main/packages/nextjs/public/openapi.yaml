@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: NFT Launchpad Kit API
+  description: REST API for NFT collection management, minting records, whitelist, and analytics.
+  version: 1.0.0
+  contact:
+    name: sijie-Z
+    url: https://github.com/sijie-Z/nft-launchpad-kit
+
+servers:
+  - url: http://localhost:56900
+    description: Local development
+  - url: https://nft-launchpad-kit.vercel.app
+    description: Production
+
+tags:
+  - name: Collections
+    description: NFT collection CRUD
+  - name: Mint Records
+    description: Mint record tracking
+  - name: Whitelist
+    description: Whitelist management
+  - name: Auth
+    description: Wallet authentication
+  - name: Analytics
+    description: Platform and collection analytics
+  - name: Signature
+    description: EIP-712 mint signature generation
+  - name: IPFS
+    description: Metadata upload to IPFS
+  - name: Health
+    description: Service health checks
+
+paths:
+  /api/collections:
+    get:
+      tags: [Collections]
+      summary: List collections
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 12 }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: owner
+          in: query
+          description: Owner wallet address
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, oldest, name, supply, price_asc, price_desc, mints] }
+      responses:
+        "200":
+          description: Paginated collection list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  collections: { type: array, items: { $ref: "#/components/schemas/Collection" } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+    post:
+      tags: [Collections]
+      summary: Create a collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, symbol, maxSupply, mintPrice, ownerAddress]
+              properties:
+                name: { type: string }
+                symbol: { type: string }
+                description: { type: string }
+                maxSupply: { type: integer }
+                mintPrice: { type: string, description: "Price in wei" }
+                maxPerWallet: { type: integer, default: 5 }
+                ownerAddress: { type: string }
+                coverImage: { type: string }
+      responses:
+        "201":
+          description: Collection created
+        "400":
+          description: Missing required fields
+        "429":
+          description: Rate limited
+
+  /api/collections/{id}:
+    get:
+      tags: [Collections]
+      summary: Get collection by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Collection details
+        "404":
+          description: Not found
+    put:
+      tags: [Collections]
+      summary: Update collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                status: { type: string }
+                coverImage: { type: string }
+                contractAddress: { type: string }
+                ownerAddress: { type: string }
+      responses:
+        "200":
+          description: Updated
+        "403":
+          description: Not owner
+    delete:
+      tags: [Collections]
+      summary: Delete collection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
+        "403":
+          description: Not owner
+
+  /api/mint-records:
+    get:
+      tags: [Mint Records]
+      summary: Query mint records
+      parameters:
+        - name: collectionId
+          in: query
+          schema: { type: string }
+        - name: minter
+          in: query
+          description: Minter wallet address
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        "200":
+          description: Paginated mint records
+    post:
+      tags: [Mint Records]
+      summary: Record a mint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [txHash, minterAddress, quantity, collectionId]
+              properties:
+                txHash: { type: string }
+                minterAddress: { type: string }
+                tokenId: { type: integer }
+                quantity: { type: integer }
+                totalPaid: { type: string }
+                mintMode: { type: string, default: public }
+                collectionId: { type: string }
+                chainId: { type: integer, default: 11155111 }
+      responses:
+        "201":
+          description: Record created
+        "400":
+          description: Missing fields
+
+  /api/whitelist:
+    get:
+      tags: [Whitelist]
+      summary: Get whitelist for a collection
+      parameters:
+        - name: collectionId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Whitelist entries
+    post:
+      tags: [Whitelist]
+      summary: Batch add whitelist entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [collectionId, entries]
+              properties:
+                collectionId: { type: string }
+                entries:
+                  type: array
+                  items:
+                    type: object
+                    required: [address]
+                    properties:
+                      address: { type: string }
+                      maxMint: { type: integer, default: 1 }
+      responses:
+        "200":
+          description: Entries added
+    delete:
+      tags: [Whitelist]
+      summary: Batch delete whitelist entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [collectionId, addresses]
+              properties:
+                collectionId: { type: string }
+                addresses:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: Entries deleted
+
+  /api/whitelist/proof:
+    post:
+      tags: [Whitelist]
+      summary: Generate Merkle proof for an address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [collectionId, address]
+              properties:
+                collectionId: { type: string }
+                address: { type: string }
+      responses:
+        "200":
+          description: Proof generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  proof: { type: array, items: { type: string } }
+                  maxQty: { type: integer }
+                  root: { type: string }
+                  isWhitelisted: { type: boolean }
+
+  /api/auth:
+    post:
+      tags: [Auth]
+      summary: Authenticate wallet address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [address]
+              properties:
+                address: { type: string }
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: "#/components/schemas/User" }
+                  token: { type: string }
+
+  /api/analytics:
+    get:
+      tags: [Analytics]
+      summary: Get analytics (platform or collection-level)
+      parameters:
+        - name: collectionId
+          in: query
+          description: Omit for platform-level stats
+          schema: { type: string }
+      responses:
+        "200":
+          description: Analytics data
+
+  /api/signature:
+    post:
+      tags: [Signature]
+      summary: Generate EIP-712 V2 mint signature
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [minter, quantity, maxMint, deadline, contractAddress, chainId]
+              properties:
+                minter: { type: string }
+                quantity: { type: integer }
+                maxMint: { type: integer }
+                deadline: { type: integer, description: "Unix timestamp" }
+                pricePerToken: { type: integer, description: "Wei, 0 = use global price" }
+                contractAddress: { type: string }
+                chainId: { type: integer }
+      responses:
+        "200":
+          description: Signature generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signature: { type: string }
+                  uid: { type: string }
+                  deadline: { type: integer }
+                  signer: { type: string }
+
+  /api/ipfs:
+    post:
+      tags: [IPFS]
+      summary: Upload NFT metadata to IPFS (Pinata)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                description: { type: string }
+                image: { type: string }
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      trait_type: { type: string }
+                      value: { type: string }
+      responses:
+        "200":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ipfsHash: { type: string }
+                  ipfsUrl: { type: string }
+                  gatewayUrl: { type: string }
+                  mock: { type: boolean, description: "true when Pinata not configured" }
+
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: All systems operational
+        "503":
+          description: Degraded
+
+components:
+  schemas:
+    Collection:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        symbol: { type: string }
+        description: { type: string }
+        contractAddress: { type: string }
+        maxSupply: { type: integer }
+        mintPrice: { type: string }
+        maxPerWallet: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        address: { type: string }
