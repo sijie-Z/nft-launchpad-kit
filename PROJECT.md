@@ -1,6 +1,6 @@
 # NFT Launchpad Kit — 项目文档
 
-> 最后更新：2026-05-10（v33 — API 测试 + Web Vitals + Prisma 迁移确认）
+> 最后更新：2026-05-10（v33 — 最终版：API 测试 + Web Vitals + Prisma 迁移确认）
 
 ---
 
@@ -11,7 +11,7 @@
 | 模块 | 状态 | 完成度 | 说明 |
 |------|------|--------|------|
 | **智能合约** | ✅ 完成 | 99% | 6 种铸造模式 + Phased Claim Conditions + Factory Clone + SafeERC20 + 布尔打包 + 签名 nonce + 延迟揭示、39 事件、33 自定义错误、96 测试、已部署 Sepolia |
-| **后端 API** | ✅ 完成 | 95% | 9 个 REST 端点 + IP-based 速率限制 + 环境变量校验，Prisma + SQLite |
+| **后端 API** | ✅ 完成 | 95% | 10 个 REST 端点 + /api/og + /api/health + /sitemap.xml + IP-based 速率限制 + 环境变量校验，Prisma + SQLite |
 | **数据库** | ✅ 完成 | 90% | 6 个模型（User、Collection、MintRecord、ClaimPhase、WhitelistEntry、PlatformConfig） |
 | **测试套件** | ✅ 完成 | 99% | 137 个测试用例（96 合约：20 核心 + 21 审计 + 38 Claim + 8 压测 + 9 Factory + 41 前端 API 测试） |
 | **部署脚本** | ✅ 完成 | 100% | 已部署到 Sepolia 测试网，Factory + Implementation 双合约 |
