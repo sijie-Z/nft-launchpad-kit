@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build Merkle tree
-    const allowlist: AllowlistEntry[] = entries.map(e => ({
+    const allowlist: AllowlistEntry[] = entries.map((e: { address: string; maxMint: number }) => ({
       address: e.address,
       maxQty: e.maxMint,
     }));
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     // Find the entry for this address
     const normalizedAddr = address.toLowerCase().trim();
-    const entry = entries.find(e => e.address.toLowerCase() === normalizedAddr);
+    const entry = entries.find((e: { address: string }) => e.address.toLowerCase() === normalizedAddr);
 
     if (!entry) {
       return NextResponse.json({

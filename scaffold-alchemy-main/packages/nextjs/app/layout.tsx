@@ -3,6 +3,7 @@ import { Providers } from "./providers";
 import { cookieToInitialState } from "@account-kit/core";
 import { config } from "~~/account.config";
 import { ErrorBoundary } from "~~/components/ErrorBoundary";
+import { WebVitals } from "~~/components/WebVitals";
 import scaffoldConfig from "~~/scaffold.config";
 import "~~/styles/globals.css";
 import { getMetadata } from "~~/utils/scaffold-alchemy/getMetadata";
@@ -41,6 +42,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
       <body>
+        <WebVitals />
         <Providers initialState={initialState}>
           <ErrorBoundary>{children}</ErrorBoundary>
         </Providers>

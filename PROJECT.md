@@ -1,6 +1,6 @@
 # NFT Launchpad Kit — 项目文档
 
-> 最后更新：2026-05-10（v32 — OG 图片生成 + Sitemap + 图表修复）
+> 最后更新：2026-05-10（v33 — API 测试 + Web Vitals + Prisma 迁移确认）
 
 ---
 
@@ -13,7 +13,7 @@
 | **智能合约** | ✅ 完成 | 99% | 6 种铸造模式 + Phased Claim Conditions + Factory Clone + SafeERC20 + 布尔打包 + 签名 nonce + 延迟揭示、39 事件、33 自定义错误、96 测试、已部署 Sepolia |
 | **后端 API** | ✅ 完成 | 95% | 9 个 REST 端点 + IP-based 速率限制 + 环境变量校验，Prisma + SQLite |
 | **数据库** | ✅ 完成 | 90% | 6 个模型（User、Collection、MintRecord、ClaimPhase、WhitelistEntry、PlatformConfig） |
-| **测试套件** | ✅ 完成 | 99% | 96 个测试用例（20 核心 + 21 审计 + 38 Claim + 8 压测 + 9 Factory） |
+| **测试套件** | ✅ 完成 | 99% | 137 个测试用例（96 合约：20 核心 + 21 审计 + 38 Claim + 8 压测 + 9 Factory + 41 前端 API 测试） |
 | **部署脚本** | ✅ 完成 | 100% | 已部署到 Sepolia 测试网，Factory + Implementation 双合约 |
 | **前端铸造页面** | ✅ 完成 | 97% | Hero 营销区 + 网络守卫 + 集合信息 + 合约信息 + 实时活动流 + 交易状态 + 成功弹窗 + Gas 估算 |
 | **前端管理后台** | ✅ 完成 | 94% | 仪表盘（含分析） + 事件日志（含筛选） + 8 管理面板 + 白名单管理器 + 确认对话框 + 输入验证 + 权限检查 |
@@ -112,6 +112,11 @@
 - ✅ AdminCharts 修复（v32）— SVG 渐变 ID 冲突（useState 计数器）、公开铸造负值防护（Math.max）、累计图表时间戳漂移修复、ARIA 无障碍标签、加载状态
 - ✅ 图表加载状态（v32）— transferEvents 为 null 时显示 spinner，为空时显示"暂无数据"提示
 - ✅ 10 个 REST API 端点 + /api/og + /api/health + /sitemap.xml
+- ✅ 前端 API 测试套件（v33）— Vitest + 5 个测试文件 + 41 个测试用例（rateLimit、env、health、signature、collections）
+- ✅ Web Vitals 性能监控（v33）— CLS/FCP/LCP/TTFB 指标采集，支持 Vercel Analytics 发送
+- ✅ Prisma 迁移确认（v33）— schema 与 init migration 完全同步，无 drift
+- ✅ `@account-kit/infra` 导入路径修复（v33）— `alchemyEnhancedApiActions` 改为子路径 `@account-kit/infra/enhanced-apis`
+- ✅ 96 合约测试 + 41 前端测试 = 137 总测试
 
 ### 1.3 后端 API 与数据库（v19）
 
@@ -320,7 +325,16 @@ NFT_Launchpad_Kit/
     │       ├── lib/
     │       │   ├── prisma.ts         # Prisma 客户端单例
     │       │   ├── rateLimit.ts      # IP-based 滑动窗口速率限制
-    │       │   └── env.ts            # 环境变量校验与启动检查
+    │       │   ├── env.ts            # 环境变量校验与启动检查
+    │       │   └── webVitals.ts      # Web Vitals 性能指标采集（CLS/FCP/LCP/TTFB）
+    │       ├── __tests__/
+    │       │   ├── lib/
+    │       │   │   ├── rateLimit.test.ts  # 速率限制器测试（7 用例）
+    │       │   │   └── env.test.ts        # 环境变量校验测试（10 用例）
+    │       │   └── api/
+    │       │       ├── health.test.ts     # 健康检查端点测试（2 用例）
+    │       │       ├── signature.test.ts  # 签名 API 测试（6 用例）
+    │       │       └── collections.test.ts # 集合 API 测试（16 用例）
     │       ├── utils/
     │       │   ├── errorMap.ts       # 合约错误映射（30+ 错误 → 友好提示）
     │       │   ├── merkle.ts         # Merkle Tree 白名单工具（viem）
@@ -342,6 +356,8 @@ NFT_Launchpad_Kit/
 | Web3 | wagmi + viem | 2.13 |
 | 账户抽象 | @account-kit/react | 4.35 |
 | 包管理 | Yarn 3 (Workspaces) | 3.2.3 |
+| 测试框架 | Vitest | 4.1.5 |
+| 性能监控 | Web Vitals | 5.2.0 |
 
 ---
 

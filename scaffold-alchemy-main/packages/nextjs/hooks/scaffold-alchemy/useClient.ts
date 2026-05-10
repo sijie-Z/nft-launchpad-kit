@@ -1,4 +1,4 @@
-import { alchemyEnhancedApiActions } from "@account-kit/infra";
+import { alchemyEnhancedApiActions } from "@account-kit/infra/enhanced-apis";
 import { UseSmartAccountClientProps, useLogout, useSmartAccountClient } from "@account-kit/react";
 import { Alchemy, Network } from "alchemy-sdk";
 import scaffoldConfig from "~~/scaffold.config";

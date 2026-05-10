@@ -82,9 +82,7 @@ export function AdminCollectionSelector({ selectedId, onSelect, ownerAddress }: 
       )}
 
       {selected?.contractAddress && (
-        <p className="mt-2 text-[10px] text-base-content/30 font-mono truncate">
-          Contract: {selected.contractAddress}
-        </p>
+        <p className="mt-2 text-[10px] text-base-content/30 font-mono truncate">Contract: {selected.contractAddress}</p>
       )}
     </div>
   );
