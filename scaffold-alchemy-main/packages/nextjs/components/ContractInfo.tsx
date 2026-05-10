@@ -4,6 +4,7 @@ import * as chains from "viem/chains";
 import { useChainId } from "wagmi";
 import deployedContracts from "~~/contracts/deployedContracts";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-alchemy";
+import scaffoldConfig from "~~/scaffold.config";
 
 /**
  * 合约信息面板
@@ -35,7 +36,7 @@ export function ContractInfo() {
           <span className="text-xs font-semibold text-warning uppercase tracking-wider">Not Deployed</span>
         </div>
         <p className="text-sm text-base-content/50">
-          Contract not deployed yet. Deploy to Sepolia and update the contract address.
+          Contract not deployed yet. Deploy and update the contract address.
         </p>
       </div>
     );
@@ -87,7 +88,7 @@ export function ContractInfo() {
           <span className="text-xs text-base-content/40">Network</span>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-success" />
-            <span className="text-xs">Sepolia Testnet</span>
+            <span className="text-xs">{scaffoldConfig.targetNetworks[0].name || "Unknown"}</span>
           </div>
         </div>
       </div>

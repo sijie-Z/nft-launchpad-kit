@@ -6,7 +6,9 @@ import { useAccount } from "wagmi";
 import { GasEstimate } from "~~/components/GasEstimate";
 import { MintSuccess } from "~~/components/MintSuccess";
 import { TxStatus } from "~~/components/TxStatus";
+import deployedContracts from "~~/contracts/deployedContracts";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-alchemy";
+import scaffoldConfig from "~~/scaffold.config";
 import { mapContractError } from "~~/utils/errorMap";
 import { notification } from "~~/utils/scaffold-alchemy";
 
@@ -130,6 +132,7 @@ export const NFTMintUI = () => {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [showOk, setShowOk] = useState(false);
   const [txStatus, setTxStatus] = useState<"idle" | "pending" | "mining" | "confirmed" | "failed">("idle");
+  const [fetchingSig, setFetchingSig] = useState(false);
 
   const { writeContractAsync, isMining } = useScaffoldWriteContract({ contractName: "NFTLaunchpadKit" });
 
@@ -498,6 +501,66 @@ export const NFTMintUI = () => {
                   onChange={e => setSigValue(e.target.value)}
                 />
               </div>
+              {/* One-click signature fetch */}
+              {address && (
+                <button
+                  type="button"
+                  className="w-full rounded-xl border border-accent/30 bg-accent/5 py-2.5 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={fetchingSig}
+                  onClick={async () => {
+                    try {
+                      setFetchingSig(true);
+                      const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+                      setSigDeadline(String(deadline));
+                      const chainId = scaffoldConfig.targetNetworks[0].id;
+                      const contractAddr = (deployedContracts as Record<number, any>)?.[chainId]?.NFTLaunchpadKit
+                        ?.address;
+                      if (!contractAddr) {
+                        notification.error("Contract not deployed on this network");
+                        return;
+                      }
+                      const res = await fetch("/api/signature", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          minter: address,
+                          quantity: sigQty,
+                          maxMint: sigMax,
+                          deadline,
+                          pricePerToken: 0,
+                          contractAddress: contractAddr,
+                          chainId,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        notification.error(data.error || "Failed to get signature");
+                        return;
+                      }
+                      setSigValue(data.signature);
+                      notification.success("Signature fetched! You can now mint.");
+                    } catch {
+                      notification.error("Network error — could not fetch signature");
+                    } finally {
+                      setFetchingSig(false);
+                    }
+                  }}
+                >
+                  {fetchingSig ? (
+                    <span className="loading loading-spinner loading-sm" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  )}
+                  {fetchingSig ? "Requesting Signature..." : "Get Signature (One-Click)"}
+                </button>
+              )}
               <Total price={price} qty={sigQty} />
               <GasEstimate gasLimit={160000n * BigInt(sigQty)} />
               <Go

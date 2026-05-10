@@ -1,10 +1,10 @@
 {
   "name": "NFT Launchpad Kit",
-  "description": "Professional NFT Minting Platform — Whitelist, Dutch Auction, Signatures & More",
+  "description": "Professional NFT Minting Platform with 6 mint modes, phased claim conditions, and Factory Clone deployment",
   "iconPath": "logo.svg",
   "short_name": "NFT Launchpad",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#6366f1",
+  "background_color": "#0f172a"
 }

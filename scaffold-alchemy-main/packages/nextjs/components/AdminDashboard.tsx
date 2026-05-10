@@ -1,11 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatEther } from "viem";
 import { useScaffoldEventHistory, useScaffoldReadContract } from "~~/hooks/scaffold-alchemy";
 
+function useEthPrice() {
+  const [price, setPrice] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+        const data = await res.json();
+        if (!cancelled && data?.ethereum?.usd) {
+          setPrice(data.ethereum.usd);
+        }
+      } catch {
+        // Silently fall back to null
+      }
+    };
+    fetchPrice();
+    const id = setInterval(fetchPrice, 60_000); // Refresh every minute
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+  return price;
+}
+
 /**
- * 管理后台仪表盘 — 关键指标 + 铸造分析
+ * Admin dashboard — key metrics + mint analytics
  */
 export function AdminDashboard() {
   const { data: minted } = useScaffoldReadContract({
@@ -45,6 +70,8 @@ export function AdminDashboard() {
     watch: true,
   });
 
+  const ethUsdPrice = useEthPrice();
+
   const zero = "0x0000000000000000000000000000000000000000";
   const nMinted = minted ? Number(minted) : 0;
   const nSupply = supply ? Number(supply) : 0;
@@ -81,7 +108,9 @@ export function AdminDashboard() {
     {
       label: "Est. Revenue",
       value: `${Number(revenue).toFixed(4)} ETH`,
-      sub: `~$${(Number(revenue) * 2000).toFixed(0)} USD (approx)`,
+      sub: ethUsdPrice
+        ? `~$${(Number(revenue) * ethUsdPrice).toFixed(0)} USD (live)`
+        : `~$${(Number(revenue) * 2000).toFixed(0)} USD (approx)`,
       color: "text-success",
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -525,4 +525,60 @@ describe("NFTLaunchpadKit — Claim Conditions", function () {
       console.log(`    ⛽ claim(5) gas: ${receipt!.gasUsed.toString()}`);
     });
   });
+
+  // ============================================================
+  // Group 9: Per-Wallet Merkle Quantity (3 tests)
+  // ============================================================
+  describe("Per-Wallet Merkle Quantity", () => {
+    it("claimWithPerWalletQty succeeds with valid (address, maxQty) proof", async () => {
+      // Single-leaf Merkle tree: root = leaf itself, proof = []
+      const leafUser = ethers.keccak256(
+        ethers.solidityPacked(["address", "uint256"], [user.address, 3])
+      );
+
+      const now = Math.floor(Date.now() / 1000);
+      const phases = [makeCondition({
+        startTimestamp: now - 10,
+        merkleRoot: leafUser,
+        quantityLimitPerWallet: 100,
+      })];
+      await contract.connect(deployer).setClaimConditions(phases);
+
+      // User can mint up to 3
+      await expect(
+        contract.connect(user).claimWithPerWalletQty(2, 3, [], { value: ethers.parseEther("0.02") })
+      ).to.emit(contract, "Claimed");
+
+      // User tries to exceed maxQty (already claimed 2, maxQty=3, trying 2 more)
+      await expect(
+        contract.connect(user).claimWithPerWalletQty(2, 3, [], { value: ethers.parseEther("0.02") })
+      ).to.be.revertedWithCustomError(contract, "WalletMintLimitExceeded");
+    });
+
+    it("claimWithPerWalletQty rejects invalid proof (wrong maxQty)", async () => {
+      // Root is for (user, 3)
+      const leafUser = ethers.keccak256(
+        ethers.solidityPacked(["address", "uint256"], [user.address, 3])
+      );
+
+      const now = Math.floor(Date.now() / 1000);
+      const phases = [makeCondition({ startTimestamp: now - 10, merkleRoot: leafUser })];
+      await contract.connect(deployer).setClaimConditions(phases);
+
+      // Trying with maxQty=5 (not in tree) — proof is empty (single leaf), but leaf won't match
+      await expect(
+        contract.connect(user).claimWithPerWalletQty(1, 5, [], { value: ethers.parseEther("0.01") })
+      ).to.be.revertedWithCustomError(contract, "NotInAllowlist");
+    });
+
+    it("claimWithPerWalletQty rejects when merkleRoot is zero", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const phases = [makeCondition({ startTimestamp: now - 10, merkleRoot: ethers.ZeroHash })];
+      await contract.connect(deployer).setClaimConditions(phases);
+
+      await expect(
+        contract.connect(user).claimWithPerWalletQty(1, 5, [], { value: ethers.parseEther("0.01") })
+      ).to.be.revertedWithCustomError(contract, "NoClaimConditions");
+    });
+  });
 });

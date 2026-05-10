@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
+import { AdminCharts } from "~~/components/AdminCharts";
+import { AdminCollectionSelector } from "~~/components/AdminCollectionSelector";
 import { AdminDashboard } from "~~/components/AdminDashboard";
 import { AdminEventLog } from "~~/components/AdminEventLog";
 import { WhitelistManager } from "~~/components/WhitelistManager";
@@ -86,6 +88,7 @@ const DEFAULT_ADMIN_ROLE = "0x00000000000000000000000000000000000000000000000000
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("sale");
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const { address } = useAccount();
   const { writeContractAsync, isMining } = useScaffoldWriteContract({ contractName: "NFTLaunchpadKit" });
 
@@ -226,12 +229,24 @@ export default function AdminPage() {
       {/* Dashboard metrics */}
       <AdminDashboard />
 
+      {/* Analytics Charts */}
+      <AdminCharts />
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar */}
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-20">
             <h1 className="text-xl font-black mb-1">Admin Panel</h1>
             <p className="text-[11px] text-base-content/30 mb-4">Contract Management</p>
+
+            {/* Collection selector */}
+            <div className="mb-4">
+              <AdminCollectionSelector
+                selectedId={selectedCollection}
+                onSelect={setSelectedCollection}
+                ownerAddress={address}
+              />
+            </div>
 
             {/* Status card */}
             <div className="rounded-2xl bg-base-200/40 border border-base-content/5 p-4 mb-4 space-y-2.5 text-sm">

@@ -12,7 +12,8 @@
     "lint": "eslint --config ./.eslintrc.json --ignore-path ./.eslintignore ./*.ts ./deploy/**/*.ts ./scripts/**/*.ts ./test/**/*.ts",
     "lint-staged": "eslint --config ./.eslintrc.json --ignore-path ./.eslintignore",
     "test": "REPORT_GAS=true hardhat test --network hardhat",
-    "verify": "hardhat etherscan-verify"
+    "verify": "hardhat etherscan-verify",
+    "verify:sepolia": "hardhat verify --network sepolia 0x7597D0D4e46Ad4E35bFfe8a52616d809765F4B22 0x555f6FD8EB31b83f3d9C66d78d21EFE0DA755329 10000000000000000 10000 5 && hardhat verify --network sepolia 0x1e320041d3106022965C7846EE7bcbceab65a8e1 0x7597D0D4e46Ad4E35bFfe8a52616d809765F4B22"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.7.0",

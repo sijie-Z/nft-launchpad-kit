@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "~~/lib/prisma";
+import { RATE_LIMITS, checkRateLimit, getClientIp } from "~~/lib/rateLimit";
 
 // GET /api/whitelist?collectionId=xxx — 查询白名单
 export async function GET(req: NextRequest) {
@@ -20,6 +21,15 @@ export async function GET(req: NextRequest) {
 
 // POST /api/whitelist — 批量添加白名单
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`wl:${ip}`, RATE_LIMITS.normal);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   const body = await req.json();
   const { collectionId, entries } = body; // entries: [{ address, maxMint }]
 
@@ -43,6 +53,15 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/whitelist — 批量删除白名单
 export async function DELETE(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`wl-del:${ip}`, RATE_LIMITS.strict);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   const body = await req.json();
   const { collectionId, addresses } = body;
 

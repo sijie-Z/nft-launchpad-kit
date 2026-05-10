@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import scaffoldConfig from "~~/scaffold.config";
 
@@ -7,20 +8,25 @@ const targetNetwork = scaffoldConfig.targetNetworks[0];
 const targetChainId = targetNetwork.id;
 const targetChainName = targetNetwork.name || "the correct network";
 
-/**
- * 网络守卫 — 检测用户是否在正确网络上
- * 如果在错误网络，显示切换提示
- */
 export function NetworkGuard({ children }: { children: React.ReactNode }) {
   const { isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending } = useSwitchChain();
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   if (!isConnected) return <>{children}</>;
 
   const isCorrectChain = chainId === targetChainId;
-
   if (isCorrectChain) return <>{children}</>;
+
+  const handleSwitch = async () => {
+    setSwitchError(null);
+    try {
+      await switchChain({ chainId: targetChainId });
+    } catch (e: any) {
+      setSwitchError(e?.message?.includes("rejected") ? "Switch rejected by user" : "Failed to switch network");
+    }
+  };
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -42,12 +48,13 @@ export function NetworkGuard({ children }: { children: React.ReactNode }) {
               Please switch to {targetChainName} to use this application.
             </p>
           </div>
+          {switchError && (
+            <div className="alert alert-warning alert-sm">
+              <span className="text-xs">{switchError}</span>
+            </div>
+          )}
           <div className="card-actions">
-            <button
-              className="btn btn-warning btn-wide"
-              onClick={() => switchChain({ chainId: targetChainId })}
-              disabled={isPending}
-            >
+            <button className="btn btn-warning btn-wide" onClick={handleSwitch} disabled={isPending}>
               {isPending ? (
                 <span className="loading loading-spinner loading-sm" />
               ) : (
@@ -65,6 +72,19 @@ export function NetworkGuard({ children }: { children: React.ReactNode }) {
               )}
             </button>
           </div>
+          {targetChainId === 11155111 && (
+            <a
+              href="https://sepoliafaucet.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Get free Sepolia ETH from faucet
+            </a>
+          )}
           <p className="text-[10px] text-base-content/20">Current network: Chain ID {chainId}</p>
         </div>
       </div>

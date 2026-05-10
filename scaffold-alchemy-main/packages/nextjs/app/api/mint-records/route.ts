@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "~~/lib/prisma";
+import { RATE_LIMITS, checkRateLimit, getClientIp } from "~~/lib/rateLimit";
 
 // GET /api/mint-records — 查询铸造记录
 export async function GET(req: NextRequest) {
@@ -29,6 +30,15 @@ export async function GET(req: NextRequest) {
 
 // POST /api/mint-records — 记录铸造（前端铸造成功后调用）
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`mint:${ip}`, RATE_LIMITS.normal);
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
   const body = await req.json();
   const { txHash, minterAddress, tokenId, quantity, totalPaid, mintMode, collectionId, chainId } = body;
 

@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bars3Icon, BugAntIcon, CogIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, CogIcon, RectangleStackIcon, SparklesIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { ConnectButton } from "~~/components/scaffold-alchemy";
 import { useOutsideClick } from "~~/hooks/scaffold-alchemy";
 
@@ -21,14 +21,19 @@ export const menuLinks: HeaderMenuLink[] = [
     icon: <SparklesIcon className="h-4 w-4" />,
   },
   {
+    label: "Collections",
+    href: "/collections",
+    icon: <RectangleStackIcon className="h-4 w-4" />,
+  },
+  {
+    label: "My NFTs",
+    href: "/my-nfts",
+    icon: <WalletIcon className="h-4 w-4" />,
+  },
+  {
     label: "Admin",
     href: "/admin",
     icon: <CogIcon className="h-4 w-4" />,
-  },
-  {
-    label: "Debug",
-    href: "/debug",
-    icon: <BugAntIcon className="h-4 w-4" />,
   },
 ];
 
@@ -85,7 +90,7 @@ export const Header = () => {
           {isDrawerOpen && (
             <ul
               tabIndex={0}
-              className="menu menu-compact dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52"
+              className="menu menu-sm dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52"
               onClick={() => {
                 setIsDrawerOpen(false);
               }}
@@ -94,11 +99,11 @@ export const Header = () => {
             </ul>
           )}
         </div>
-        <Link href="/" passHref className="hidden lg:flex items-center gap-2 ml-4 mr-6 shrink-0">
+        <Link href="/" passHref className="flex items-center gap-2 ml-4 mr-6 shrink-0">
           <div className="flex relative w-9 h-9">
-            <Image alt="Alchemy logo" className="cursor-pointer" fill src="/logo.svg" />
+            <Image alt="NFT Launchpad Kit" className="cursor-pointer" fill src="/logo.svg" />
           </div>
-          <div className="flex flex-col">
+          <div className="hidden sm:flex flex-col">
             <span className="font-bold leading-tight">NFT Launchpad Kit</span>
             <span className="text-xs">Professional NFT Minting</span>
           </div>

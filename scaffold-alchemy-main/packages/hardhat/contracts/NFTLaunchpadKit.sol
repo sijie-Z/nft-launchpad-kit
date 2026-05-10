@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "erc721a/contracts/ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @title NFTLaunchpadKit
- * @author Your AI Assistant
+ * @author sijie-Z
  * @dev A professional-grade, feature-rich, and secure NFT minting contract.
  *      Supports both direct deployment and Clone (minimal proxy) deployment via Factory.
  */
@@ -85,6 +85,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     event ClaimConditionUpdated(uint256 indexed phaseId);
     event PhaseAdvanced(uint256 indexed fromPhase, uint256 indexed toPhase);
     event Claimed(address indexed claimer, uint256 indexed phaseId, uint256 quantity, uint256 totalPaid);
+    event DelayedRevealSet(bytes32 indexed hashedUri, uint256 indexed blockNumber);
+    event DelayedRevealRevealed(string revealedBaseUri, uint256 indexed blockNumber);
 
     // --- Constants ---
 
@@ -114,34 +116,38 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     // @dev A mapping to track the number of mints per wallet.
     mapping(address => uint256) private _walletMints;
 
-    // @dev 白名单根（小白解释：只有在这棵默克尔树里的地址才能在白名单阶段铸造）
+    // @dev Merkle root for the allowlist. Only addresses in this tree can mint during the allowlist phase.
     bytes32 public allowlistMerkleRoot;
 
-    // @dev 荷兰拍卖参数（小白解释：价格会按时间从高到低逐步下降）
+    // @dev Dutch auction parameters. Price decreases linearly from startPrice to endPrice over the duration.
     uint256 public auctionStartPrice;
     uint256 public auctionEndPrice;
     uint256 public auctionStartTime;
     uint256 public auctionDuration;
 
-    // @dev 可信签名者（小白解释：由这个地址签名的"许可单"，用户就能用它来铸造）
+    // @dev Trusted signer address. Signatures from this address authorize users to mint.
     address public trustedSigner;
 
-    // @dev 收款分配（小白解释：提现时按比例把钱分给多个地址，总比例=10000）
+    // @dev Payout split configuration. Funds are distributed to these addresses proportionally (total = 10000 bps).
     address[] public payoutRecipients;
-    uint256[] public payoutBps; // 基点（bps），例如 2500 代表 25%
+    uint256[] public payoutBps; // Basis points (e.g. 2500 = 25%)
     uint256 public constant BPS_DENOMINATOR = 10000;
 
-    // @dev 角色常量（小白解释：给运营分配权限）
+    // @dev Role constant for operator-level permissions (toggle sales, configure auctions).
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
-    // @dev ERC20 支付配置（小白解释：用代币而不是ETH来付钱）
+    // @dev ERC20 payment configuration. Allows minting with an ERC20 token instead of ETH.
     address public acceptedToken;
     uint256 public tokenMintPrice;
 
-    // @dev 揭示与洗牌（小白解释：未揭示显示占位，揭示后打乱顺序生成元数据）
+    // @dev Reveal and shuffle state. Before reveal, tokens return a placeholder URI; after reveal, IDs are shuffled.
     uint256 public revealSeed;
     bytes32 public revealCommit;
     string private _preRevealURI;
+
+    // @dev Delayed reveal state. Encrypted metadata URI is stored on-chain; the decryption key is revealed later.
+    string private _encryptedBaseUri;    // AES-256-CTR encrypted baseURI
+    bytes32 private _encryptedUriHash;   // keccak256(encryptedUri) — tamper-proof checksum
 
     // --- Claim Conditions (Phased Drop) ---
 
@@ -169,6 +175,11 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     // --- Signature Nonce ---
     // @dev Per-address nonce to prevent signature replay attacks.
     mapping(address => uint256) public signatureNonce;
+
+    // --- Signature Mint UID ---
+    // @dev Per-signature unique ID to prevent any reuse, even across different minters.
+    //      Also supports per-signature pricing (pricePerToken = 0 uses global mintPrice).
+    mapping(bytes32 => bool) public usedSignatures;
 
     // --- Constructor ---
 
@@ -394,8 +405,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 设置未揭示占位URI。
-     * 小白解释：还没揭示时，所有NFT都显示这个占位链接。
+     * @dev Sets the pre-reveal placeholder URI. All tokens return this URI before reveal.
      */
     function setPreRevealURI(string memory placeholder) external onlyOwner {
         _preRevealURI = placeholder;
@@ -403,8 +413,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 提交揭示承诺（commit）。
-     * 小白解释：先上链一个哈希，避免后来作弊；等到需要揭示时再提供明文种子。
+     * @dev Commits a reveal hash on-chain. Prevents the owner from changing the reveal after the fact.
+     *      Provide the plaintext seed later via finalizeReveal().
      */
     function commitReveal(bytes32 commitHash) external onlyOwner {
         revealCommit = commitHash;
@@ -412,8 +422,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 完成揭示：提供种子，合约生成洗牌随机数。
-     * 小白解释：校验种子与之前的承诺匹配，然后结合区块哈希生成随机种子，标记已揭示。
+     * @dev Finalizes the reveal. Validates the seed against the prior commit,
+     *      then derives a random shuffle seed from the seed and block hash.
      */
     function finalizeReveal(bytes32 seed) external onlyOwner {
         if (revealed()) revert AlreadyRevealed();
@@ -424,6 +434,41 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
         }
         _setFlag(FLAG_REVEALED, true);
         emit RevealFinalized(revealSeed);
+    }
+
+    // --- Delayed Reveal (AES-256-CTR Encrypted Metadata) ---
+
+    /**
+     * @dev Sets the delayed reveal encrypted URI. The encrypted metadata is stored on-chain;
+     *      only holders of the decryption key can access the real content.
+     * @param encryptedUri AES-256-CTR encrypted baseURI string
+     * @param hashedUri keccak256(encryptedUri) — tamper-proof checksum
+     */
+    function setDelayedRevealURI(string calldata encryptedUri, bytes32 hashedUri) external onlyOwner {
+        if (keccak256(bytes(encryptedUri)) != hashedUri) revert BadRevealSeed();
+        _encryptedBaseUri = encryptedUri;
+        _encryptedUriHash = hashedUri;
+        emit DelayedRevealSet(hashedUri, block.number);
+    }
+
+    /**
+     * @dev Reveals the delayed URI. Replaces the encrypted URI with the real baseURI.
+     * @param uri The real (decrypted) baseURI
+     */
+    function revealDelayedURI(string calldata uri) external onlyOwner {
+        if (bytes(_encryptedBaseUri).length == 0) revert NoRevealCommit();
+        // Replace encrypted URI with real URI
+        _baseTokenURI = uri;
+        _encryptedBaseUri = "";
+        _encryptedUriHash = bytes32(0);
+        emit DelayedRevealRevealed(uri, block.number);
+    }
+
+    /**
+     * @dev Returns whether delayed reveal mode is active (encrypted URI set but not yet revealed).
+     */
+    function isDelayedRevealActive() public view returns (bool) {
+        return bytes(_encryptedBaseUri).length > 0;
     }
 
     /**
@@ -439,8 +484,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 设置 ERC20 支付的代币与单价。
-     * 小白解释：允许用户用某个代币支付铸造费用。
+     * @dev Sets the accepted ERC20 token and its unit price for minting.
      */
     function setAcceptedToken(address token, uint256 unitPrice) external onlyOwner {
         if (token == address(0)) revert ZeroAddress();
@@ -450,8 +494,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 使用 ERC20 代币铸造。
-     * 小白解释：先在钱包里 approve 本合约，之后按单价 * 数量转入代币再铸造。
+     * @dev Mints using ERC20 tokens. Caller must approve this contract first.
      */
     function mintWithERC20(uint256 quantity) external nonReentrant {
         if (paused()) revert ContractPaused();
@@ -530,8 +573,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 提现指定 ERC20 代币到目标地址。
-     * 小白解释：把合约里收到的代币打到财务指定的钱包里。
+     * @dev Withdraws a specified ERC20 token to the target address.
      */
     function withdrawToken(address token, address to, uint256 amount) external onlyOwner nonReentrant {
         IERC20(token).safeTransfer(to, amount);
@@ -539,8 +581,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 设置收款分配的地址与比例。
-     * 小白解释：传入多个地址和对应比例，比例总和必须等于 10000（代表 100%）。
+     * @dev Sets payout recipients and their share ratios. Total bps must equal 10000 (100%).
      */
     function setPayoutRecipients(address[] calldata recipients, uint256[] calldata bps) external onlyOwner {
         if (recipients.length != bps.length) revert LengthMismatch();
@@ -556,8 +597,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 按比例分配当前合约余额到预设地址。
-     * 小白解释：比如两个人分别 70% 与 30%，就会把钱按比例打过去。
+     * @dev Splits the contract balance to payout recipients according to their bps ratios.
      */
     function withdrawSplit() external onlyOwner nonReentrant {
         uint256 bal = address(this).balance;
@@ -579,10 +619,9 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 设置默认版税（EIP-2981）。
-     * 小白解释：市场卖出时，会按这个比例把版税打到指定地址。
-     * @param receiver 接收版税的钱包地址
-     * @param feeNumerator 费率，单位为 1/10000（例如 500 代表 5%）
+     * @dev Sets the default royalty (EIP-2981).
+     * @param receiver The wallet address to receive royalties
+     * @param feeNumerator Fee in 1/10000 (e.g. 500 = 5%)
      */
     function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
         _setDefaultRoyalty(receiver, feeNumerator);
@@ -590,9 +629,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 设置白名单的默克尔根。
-     * 小白解释：你把线下生成的树根填进来，合约就能验证谁是白名单。
-     * @param root 默克尔树根值
+     * @dev Sets the allowlist Merkle root. The contract uses this to verify allowlist membership.
+     * @param root The Merkle root value
      */
     function setAllowlistMerkleRoot(bytes32 root) external onlyOwner {
         allowlistMerkleRoot = root;
@@ -600,9 +638,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 白名单销售开关。
-     * 小白解释：只影响白名单阶段，公开销售仍由原来的开关控制。
-     * @param _newState 开启或关闭
+     * @dev Toggles the allowlist sale. Only affects the allowlist phase; public sale has its own toggle.
+     * @param _newState Enable or disable
      */
     function setAllowlistSaleState(bool _newState) external onlyOwner {
         _setFlag(FLAG_ALLOWLIST_ACTIVE, _newState);
@@ -679,7 +716,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 运营角色也可以开关白名单与公开售卖。
+     * @dev Operator-role variants for toggling sales (no OwnerRequired).
      */
     function setSaleStateByRole(bool _newState) external {
         if (!hasRole(OPERATOR_ROLE, msg.sender)) revert NoOperatorRole();
@@ -694,10 +731,9 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 白名单铸造：验证地址在默克尔树中，并按公开价收费。
-     * 小白解释：proof 是你地址在树里的证明，通常由前端传入。
-     * @param _quantity 铸造数量
-     * @param proof 默克尔证明
+     * @dev Allowlist mint. Verifies the caller is in the Merkle tree, then charges the public mint price.
+     * @param _quantity Number of NFTs to mint
+     * @param proof Merkle proof (typically generated by the frontend)
      */
     function mintAllowlist(uint256 _quantity, bytes32[] calldata proof) external payable nonReentrant {
         if (paused()) revert ContractPaused();
@@ -719,12 +755,11 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 配置荷兰拍卖参数。
-     * 小白解释：拍卖开始时价格高，随后按总时长线性降到最低价。
-     * @param startPrice 起始价格（Wei）
-     * @param endPrice 结束价格（Wei）
-     * @param startTime 开始时间（Unix 时间戳）
-     * @param duration 总时长（秒）
+     * @dev Configures the Dutch auction parameters.
+     * @param startPrice Starting price (wei)
+     * @param endPrice Ending/floor price (wei)
+     * @param startTime Auction start time (Unix timestamp)
+     * @param duration Total auction duration (seconds)
      */
     function configureDutchAuction(
         uint256 startPrice,
@@ -762,8 +797,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 计算当前荷兰拍卖价格。
-     * 小白解释：如果未开始用起始价；如果已经结束用最低价；中间线性插值。
+     * @dev Calculates the current Dutch auction price.
+     *      Returns startPrice before auction, endPrice after, and linearly interpolates in between.
      */
     function currentAuctionPrice() public view returns (uint256) {
         if (auctionStartTime == 0) return auctionStartPrice;
@@ -777,9 +812,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 荷兰拍卖铸造：按当前价格收费。
-     * 小白解释：随时间越久价格越低，但不能少于最低价。
-     * @param _quantity 铸造数量
+     * @dev Dutch auction mint. Charges the current auction price.
+     * @param _quantity Number of NFTs to mint
      */
     function mintDutchAuction(uint256 _quantity) external payable nonReentrant {
         if (paused()) revert ContractPaused();
@@ -809,11 +843,15 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 动态 tokenURI：未揭示返回占位，揭示后按洗牌ID拼接。
-     * 使用 Feistel 网络实现不可逆排列，防止稀有度预测。
+     * @dev Dynamic tokenURI. Returns placeholder before reveal; after reveal, uses Feistel-shuffled ID.
+     *      The Feistel network provides a bijective permutation to prevent rarity sniping.
      */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if (!_exists(tokenId)) revert NonexistentToken();
+        // Delayed reveal mode: return encrypted URI prefix + tokenId
+        if (isDelayedRevealActive()) {
+            return string.concat(_encryptedBaseUri, Strings.toString(tokenId), ".json");
+        }
         if (!revealed()) {
             return _preRevealURI;
         }
@@ -850,16 +888,14 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 支持接口声明（EIP-165），用于兼容 ERC2981 版税查询。
-     * 小白解释：让市场知道这个合约支持版税标准。
+     * @dev EIP-165 interface support declaration. Enables ERC2981 royalty queries on marketplaces.
      */
     function supportsInterface(bytes4 interfaceId) public view override(ERC721A, ERC2981, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
     /**
-     * @dev 紧急暂停。
-     * 小白解释：出现问题时，管理员可以暂停所有铸造入口，保护资金安全。
+     * @dev Emergency pause. Stops all mint entry points to protect funds.
      */
     function pause() external onlyOwner {
         _pause();
@@ -867,8 +903,7 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 取消暂停。
-     * 小白解释：问题解决后，重新开放铸造。
+     * @dev Unpauses the contract, re-enabling all minting.
      */
     function unpause() external onlyOwner {
         _unpause();
@@ -876,15 +911,23 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev EIP‑712 结构化签名铸造（更专业更安全）。
-     * 小白解释：后端按标准结构签名，前端带签名来铸造，抗重放且更规范。
+     * @dev EIP-712 structured signature mint typehash (V1).
      */
     bytes32 public constant MINT_TYPEHASH = keccak256(
         "MintAuthorization(address minter,uint256 quantity,uint256 maxMint,uint256 deadline,uint256 nonce)"
     );
 
     /**
-     * @dev 使用 EIP‑712 签名授权铸造。
+     * @dev V2 typehash with UID and per-signature pricing.
+     *      UID ensures each signature is one-time-use globally (not just per-address).
+     *      pricePerToken allows the signer to set a custom price per signature.
+     */
+    bytes32 public constant MINT_TYPEHASH_V2 = keccak256(
+        "MintAuthorizationV2(address minter,uint256 quantity,uint256 maxMint,uint256 deadline,uint256 pricePerToken,bytes32 uid)"
+    );
+
+    /**
+     * @dev Mint with EIP-712 structured signature (V1).
      */
     function mintWithSignature712(
         uint256 quantity,
@@ -926,9 +969,9 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 设置可信签名者。
-     * 小白解释：这个地址会在后端生成签名，用户拿到签名就能"授权铸造"。
-     * @param signer 签名者地址
+     * @dev Sets the trusted signer address. This address signs authorizations off-chain;
+     *      users present the signature on-chain to mint.
+     * @param signer The signer's wallet address
      */
     function setTrustedSigner(address signer) external onlyOwner {
         if (signer == address(0)) revert ZeroAddress();
@@ -937,12 +980,12 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev 签名授权铸造：由可信签名者离线签发许可，用户带签名来铸造。
-     * 小白解释：这样可以做"门票/任务完成"的准入，不需要上链名单。
-     * @param quantity 铸造数量
-     * @param maxMint 该签名允许的最多铸造次数（防止无限用）
-     * @param deadline 过期时间戳（秒）
-     * @param signature 签名（后端生成）
+     * @dev Signature-authorized mint (traditional). The trusted signer issues an off-chain authorization;
+     *      the user presents it on-chain to mint. Useful for gating (quests, tickets) without on-chain lists.
+     * @param quantity Number of NFTs to mint
+     * @param maxMint Maximum times this signature can be used (prevents unlimited reuse)
+     * @param deadline Expiration timestamp (seconds)
+     * @param signature The signature (generated off-chain by the signer)
      */
     function mintWithSignature(
         uint256 quantity,
@@ -976,6 +1019,166 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
             }
         }
         emit MintedBySignature(msg.sender, quantity, maxMint);
+    }
+
+    // --- Signature Mint V2 (UID + Per-Signature Pricing) ---
+
+    /**
+     * @dev V2 EIP-712 signature mint with UID and per-signature pricing.
+     *      UID ensures each signature can only be used once globally.
+     *      pricePerToken = 0 falls back to global mintPrice.
+     */
+    function mintWithSignature712V2(
+        uint256 quantity,
+        uint256 maxMint,
+        uint256 deadline,
+        uint256 pricePerToken,
+        bytes32 uid,
+        bytes calldata signature
+    ) external payable nonReentrant {
+        if (paused()) revert ContractPaused();
+        if (trustedSigner == address(0)) revert NoSigner();
+        if (block.timestamp > deadline) revert SignatureExpired();
+        if (quantity == 0) revert InvalidMintQuantity();
+        if (usedSignatures[uid]) revert BadSignature();
+
+        bytes32 structHash = keccak256(abi.encode(
+            MINT_TYPEHASH_V2,
+            msg.sender,
+            quantity,
+            maxMint,
+            deadline,
+            pricePerToken,
+            uid
+        ));
+        bytes32 digest = _hashTypedDataV4(structHash);
+        address recovered = ECDSA.recover(digest, signature);
+        if (recovered != trustedSigner) revert BadSignature();
+
+        usedSignatures[uid] = true;
+
+        uint256 price = pricePerToken > 0 ? pricePerToken : mintPrice;
+        uint256 cost = price * quantity;
+        if (cost > msg.value) revert NotEnoughEtherSent();
+        _batchMint(msg.sender, quantity, maxMint);
+        unchecked {
+            uint256 excess = msg.value - cost;
+            if (excess > 0) {
+                (bool ok, ) = msg.sender.call{value: excess}("");
+                if (!ok) revert WithdrawFailed();
+            }
+        }
+        emit MintedBySignature(msg.sender, quantity, maxMint);
+    }
+
+    /**
+     * @dev V2 traditional signature mint with UID and per-signature pricing.
+     */
+    function mintWithSignatureV2(
+        uint256 quantity,
+        uint256 maxMint,
+        uint256 deadline,
+        uint256 pricePerToken,
+        bytes32 uid,
+        bytes calldata signature
+    ) external payable nonReentrant {
+        if (paused()) revert ContractPaused();
+        if (trustedSigner == address(0)) revert NoSigner();
+        if (block.timestamp > deadline) revert SignatureExpired();
+        if (quantity == 0) revert InvalidMintQuantity();
+        if (usedSignatures[uid]) revert BadSignature();
+
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(msg.sender, quantity, maxMint, deadline, pricePerToken, uid, address(this), block.chainid)
+        );
+        bytes32 ethSignedMessageHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
+        address recovered = ECDSA.recover(ethSignedMessageHash, signature);
+        if (recovered != trustedSigner) revert BadSignature();
+
+        usedSignatures[uid] = true;
+
+        uint256 price = pricePerToken > 0 ? pricePerToken : mintPrice;
+        uint256 cost = price * quantity;
+        if (cost > msg.value) revert NotEnoughEtherSent();
+        _batchMint(msg.sender, quantity, maxMint);
+        unchecked {
+            uint256 excess = msg.value - cost;
+            if (excess > 0) {
+                (bool ok, ) = msg.sender.call{value: excess}("");
+                if (!ok) revert WithdrawFailed();
+            }
+        }
+        emit MintedBySignature(msg.sender, quantity, maxMint);
+    }
+
+    /**
+     * @dev Check if a signature UID has been used.
+     */
+    function isSignatureUsed(bytes32 uid) external view returns (bool) {
+        return usedSignatures[uid];
+    }
+
+    // --- Per-Wallet Merkle Quantity Claim ---
+
+    /**
+     * @dev Claim with per-wallet quantity from Merkle proof.
+     *      The Merkle leaf is keccak256(abi.encodePacked(minter, maxQty)),
+     *      allowing the signer to grant different quantities to different wallets.
+     *      maxQty overrides quantityLimitPerWallet for this specific claim.
+     */
+    function claimWithPerWalletQty(
+        uint256 quantity,
+        uint256 maxQty,
+        bytes32[] calldata proof
+    ) external payable nonReentrant {
+        if (paused()) revert ContractPaused();
+        if (quantity == 0) revert InvalidMintQuantity();
+        if (quantity > maxQty) revert WalletMintLimitExceeded();
+
+        uint256 phaseId = _getActivePhaseIndex();
+        ClaimCondition storage cond = _claimConditions[phaseId];
+
+        // Per-wallet limit from Merkle (overrides quantityLimitPerWallet)
+        uint256 alreadyClaimed = _phaseWalletClaims[phaseId][msg.sender];
+        if (alreadyClaimed + quantity > maxQty) revert WalletMintLimitExceeded();
+
+        uint256 newClaimed = cond.supplyClaimed + quantity;
+        if (newClaimed > cond.maxSupply) revert PhaseSupplyExceeded();
+
+        // Merkle proof with (address, maxQty) leaf
+        if (cond.merkleRoot == bytes32(0)) revert NoClaimConditions();
+        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, maxQty));
+        if (!MerkleProof.verify(proof, cond.merkleRoot, leaf)) revert NotInAllowlist();
+
+        uint256 totalPaid = cond.pricePerToken * quantity;
+        if (cond.currency == address(0)) {
+            if (msg.value < totalPaid) revert NotEnoughEtherSent();
+        }
+
+        _phaseWalletClaims[phaseId][msg.sender] = alreadyClaimed + quantity;
+        _phaseWalletLastClaim[phaseId][msg.sender] = block.timestamp;
+        cond.supplyClaimed = uint48(newClaimed);
+        if (newClaimed >= cond.maxSupply) {
+            unchecked { _activePhaseIndex = phaseId + 1; }
+            emit PhaseAdvanced(phaseId, phaseId + 1);
+        }
+
+        if (cond.currency != address(0)) {
+            IERC20(cond.currency).safeTransferFrom(msg.sender, address(this), totalPaid);
+        }
+        _claimMint(msg.sender, quantity);
+
+        if (cond.currency == address(0)) {
+            unchecked {
+                uint256 excess = msg.value - totalPaid;
+                if (excess > 0) {
+                    (bool ok, ) = msg.sender.call{value: excess}("");
+                    if (!ok) revert WithdrawFailed();
+                }
+            }
+        }
+
+        emit Claimed(msg.sender, phaseId, quantity, totalPaid);
     }
 
     // --- Claim Condition View Functions ---

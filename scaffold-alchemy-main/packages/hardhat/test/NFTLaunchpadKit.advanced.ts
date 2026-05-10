@@ -168,6 +168,169 @@ describe("NFTLaunchpadKit Advanced", function () {
     ).to.emit(contract, "Transfer");
   });
 
+  it("V2 EIP-712 签名铸造（UID + 自定义价格）成功", async () => {
+    await contract.connect(deployer).setTrustedSigner(deployer.address);
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+    const domain = {
+      name: "NFT Launchpad Kit",
+      version: "1",
+      chainId,
+      verifyingContract: await contract.getAddress(),
+    };
+    const types = {
+      MintAuthorizationV2: [
+        { name: "minter", type: "address" },
+        { name: "quantity", type: "uint256" },
+        { name: "maxMint", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+        { name: "pricePerToken", type: "uint256" },
+        { name: "uid", type: "bytes32" },
+      ],
+    };
+    const latest = await ethers.provider.getBlock("latest");
+    const uid = ethers.keccak256(ethers.toUtf8Bytes("unique-sig-1"));
+    const customPrice = ethers.parseEther("0.005"); // 自定义价格比全局低
+    const value = {
+      minter: user.address,
+      quantity: 2n,
+      maxMint: 3n,
+      deadline: BigInt(latest!.timestamp + 3600),
+      pricePerToken: customPrice,
+      uid,
+    };
+    const signature = await deployer.signTypedData(domain, types, value);
+
+    // 按自定义价格铸造（0.005 * 2 = 0.01 ETH）
+    await expect(
+      contract.connect(user).mintWithSignature712V2(
+        value.quantity, value.maxMint, value.deadline, value.pricePerToken, value.uid, signature,
+        { value: ethers.parseEther("0.01") }
+      )
+    ).to.emit(contract, "Transfer");
+
+    // 同一 UID 重放会被拒绝
+    await expect(
+      contract.connect(user).mintWithSignature712V2(
+        value.quantity, value.maxMint, value.deadline, value.pricePerToken, value.uid, signature,
+        { value: ethers.parseEther("0.01") }
+      )
+    ).to.be.revertedWithCustomError(contract, "BadSignature");
+  });
+
+  it("V2 签名 pricePerToken=0 时使用全局价格", async () => {
+    await contract.connect(deployer).setTrustedSigner(deployer.address);
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+    const domain = {
+      name: "NFT Launchpad Kit",
+      version: "1",
+      chainId,
+      verifyingContract: await contract.getAddress(),
+    };
+    const types = {
+      MintAuthorizationV2: [
+        { name: "minter", type: "address" },
+        { name: "quantity", type: "uint256" },
+        { name: "maxMint", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+        { name: "pricePerToken", type: "uint256" },
+        { name: "uid", type: "bytes32" },
+      ],
+    };
+    const latest = await ethers.provider.getBlock("latest");
+    const uid = ethers.keccak256(ethers.toUtf8Bytes("unique-sig-2"));
+    const value = {
+      minter: user.address,
+      quantity: 1n,
+      maxMint: 1n,
+      deadline: BigInt(latest!.timestamp + 3600),
+      pricePerToken: 0n, // 使用全局 mintPrice
+      uid,
+    };
+    const signature = await deployer.signTypedData(domain, types, value);
+
+    // 全局价格 0.01 ETH * 1 = 0.01 ETH
+    await expect(
+      contract.connect(user).mintWithSignature712V2(
+        value.quantity, value.maxMint, value.deadline, value.pricePerToken, value.uid, signature,
+        { value: ethers.parseEther("0.01") }
+      )
+    ).to.emit(contract, "Transfer");
+  });
+
+  it("V2 传统签名铸造（UID）成功", async () => {
+    await contract.connect(deployer).setTrustedSigner(deployer.address);
+    const quantity = 1n;
+    const maxMint = 1n;
+    const latest = await ethers.provider.getBlock("latest");
+    const deadline = BigInt(latest!.timestamp + 3600);
+    const pricePerToken = 0n;
+    const uid = ethers.keccak256(ethers.toUtf8Bytes("unique-sig-3"));
+
+    const messageHash = ethers.keccak256(
+      ethers.solidityPacked(
+        ["address", "uint256", "uint256", "uint256", "uint256", "bytes32", "address", "uint256"],
+        [user.address, quantity, maxMint, deadline, pricePerToken, uid, await contract.getAddress(), BigInt(31337)]
+      )
+    );
+    const signature = await deployer.signMessage(ethers.getBytes(messageHash));
+
+    await expect(
+      contract.connect(user).mintWithSignatureV2(
+        quantity, maxMint, deadline, pricePerToken, uid, signature,
+        { value: ethers.parseEther("0.01") }
+      )
+    ).to.emit(contract, "Transfer");
+
+    // 同一 UID 重放
+    await expect(
+      contract.connect(user).mintWithSignatureV2(
+        quantity, maxMint, deadline, pricePerToken, uid, signature,
+        { value: ethers.parseEther("0.01") }
+      )
+    ).to.be.revertedWithCustomError(contract, "BadSignature");
+  });
+
+  it("isSignatureUsed 查询正确", async () => {
+    const uid = ethers.keccak256(ethers.toUtf8Bytes("test-uid"));
+    expect(await contract.isSignatureUsed(uid)).to.equal(false);
+
+    // 使用 V2 签名铸造后查询
+    await contract.connect(deployer).setTrustedSigner(deployer.address);
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+    const domain = {
+      name: "NFT Launchpad Kit",
+      version: "1",
+      chainId,
+      verifyingContract: await contract.getAddress(),
+    };
+    const types = {
+      MintAuthorizationV2: [
+        { name: "minter", type: "address" },
+        { name: "quantity", type: "uint256" },
+        { name: "maxMint", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+        { name: "pricePerToken", type: "uint256" },
+        { name: "uid", type: "bytes32" },
+      ],
+    };
+    const latest = await ethers.provider.getBlock("latest");
+    const value = {
+      minter: user.address,
+      quantity: 1n,
+      maxMint: 1n,
+      deadline: BigInt(latest!.timestamp + 3600),
+      pricePerToken: 0n,
+      uid,
+    };
+    const signature = await deployer.signTypedData(domain, types, value);
+    await contract.connect(user).mintWithSignature712V2(
+      value.quantity, value.maxMint, value.deadline, value.pricePerToken, value.uid, signature,
+      { value: ethers.parseEther("0.01") }
+    );
+
+    expect(await contract.isSignatureUsed(uid)).to.equal(true);
+  });
+
   it("提现按比例分配（withdrawSplit）正确", async () => {
     await contract.connect(deployer).setSaleState(true);
     // 设置分配：deployer 70%，user 30%
@@ -236,6 +399,108 @@ describe("NFTLaunchpadKit Advanced", function () {
 
     const uriAfter = await contract.tokenURI(0);
     expect(uriAfter.startsWith("ipfs://base/")).to.equal(true);
+  });
+
+  // --- Delayed Reveal Tests ---
+
+  it("setDelayedRevealURI 存储加密URI并触发事件", async () => {
+    const encryptedUri = "https://encrypted.example.com/metadata/";
+    const hashedUri = ethers.keccak256(ethers.toUtf8Bytes(encryptedUri));
+
+    await expect(contract.connect(deployer).setDelayedRevealURI(encryptedUri, hashedUri))
+      .to.emit(contract, "DelayedRevealSet")
+      .withArgs(hashedUri, (v: bigint) => v > 0n);
+
+    expect(await contract.isDelayedRevealActive()).to.equal(true);
+  });
+
+  it("setDelayedRevealURI 拒绝哈希不匹配", async () => {
+    const encryptedUri = "https://encrypted.example.com/metadata/";
+    const wrongHash = ethers.keccak256(ethers.toUtf8Bytes("wrong-data"));
+
+    await expect(contract.connect(deployer).setDelayedRevealURI(encryptedUri, wrongHash))
+      .to.be.revertedWithCustomError(contract, "BadRevealSeed");
+  });
+
+  it("setDelayedRevealURI 仅 owner 可调用", async () => {
+    const encryptedUri = "https://encrypted.example.com/metadata/";
+    const hashedUri = ethers.keccak256(ethers.toUtf8Bytes(encryptedUri));
+
+    await expect(contract.connect(user).setDelayedRevealURI(encryptedUri, hashedUri))
+      .to.be.revertedWithCustomError(contract, "OwnableUnauthorizedAccount");
+  });
+
+  it("延迟揭示模式下 tokenURI 返回加密URI", async () => {
+    const encryptedUri = "https://encrypted.example.com/metadata/";
+    const hashedUri = ethers.keccak256(ethers.toUtf8Bytes(encryptedUri));
+
+    await contract.connect(deployer).setSaleState(true);
+    await contract.connect(user).mint(1, { value: ethers.parseEther("0.01") });
+    await contract.connect(deployer).setDelayedRevealURI(encryptedUri, hashedUri);
+
+    const uri = await contract.tokenURI(0);
+    expect(uri).to.equal("https://encrypted.example.com/metadata/0.json");
+  });
+
+  it("revealDelayedURI 替换为真实URI并触发事件", async () => {
+    const encryptedUri = "https://encrypted.example.com/metadata/";
+    const hashedUri = ethers.keccak256(ethers.toUtf8Bytes(encryptedUri));
+    const realUri = "https://arweave.net/real-collection/";
+
+    await contract.connect(deployer).setSaleState(true);
+    await contract.connect(user).mint(1, { value: ethers.parseEther("0.01") });
+    await contract.connect(deployer).setDelayedRevealURI(encryptedUri, hashedUri);
+
+    // 揭示前是加密URI
+    expect(await contract.tokenURI(0)).to.equal("https://encrypted.example.com/metadata/0.json");
+
+    // 揭示
+    await expect(contract.connect(deployer).revealDelayedURI(realUri))
+      .to.emit(contract, "DelayedRevealRevealed")
+      .withArgs(realUri, (v: bigint) => v > 0n);
+
+    // 揭示后是真实URI
+    expect(await contract.isDelayedRevealActive()).to.equal(false);
+    // tokenURI 现在走正常的 revealed/preReveal 逻辑
+    // 因为没有 commitReveal，revealed() 返回 false，所以返回 preRevealURI
+    const uri = await contract.tokenURI(0);
+    expect(uri).to.equal(""); // 默认 preRevealURI 为空
+  });
+
+  it("revealDelayedURI 在未设置时拒绝", async () => {
+    await contract.connect(deployer).setSaleState(true);
+    await contract.connect(user).mint(1, { value: ethers.parseEther("0.01") });
+
+    await expect(contract.connect(deployer).revealDelayedURI("https://real.uri/"))
+      .to.be.revertedWithCustomError(contract, "NoRevealCommit");
+  });
+
+  it("延迟揭示与 Feistel 揭示共存：先延迟揭示再 Feistel 揭示", async () => {
+    const encryptedUri = "https://encrypted.example.com/metadata/";
+    const hashedUri = ethers.keccak256(ethers.toUtf8Bytes(encryptedUri));
+    const realBaseUri = "ipfs://real-base/";
+
+    await contract.connect(deployer).setPreRevealURI("ipfs://placeholder/metadata.json");
+    await contract.connect(deployer).setSaleState(true);
+    await contract.connect(user).mint(2, { value: ethers.parseEther("0.02") });
+
+    // 阶段1：延迟揭示模式 → 返回加密URI
+    await contract.connect(deployer).setDelayedRevealURI(encryptedUri, hashedUri);
+    expect(await contract.tokenURI(0)).to.equal("https://encrypted.example.com/metadata/0.json");
+
+    // 阶段2：揭示延迟揭示 → 现在没有 Feistel 揭示，返回 preRevealURI
+    await contract.connect(deployer).revealDelayedURI(realBaseUri);
+    expect(await contract.tokenURI(0)).to.equal("ipfs://placeholder/metadata.json");
+
+    // 阶段3：Feistel 揭示 → 返回真实 baseURI + shuffled tokenId
+    const seed = ethers.keccak256(ethers.toUtf8Bytes("feistel-seed"));
+    const commit = ethers.keccak256(ethers.solidityPacked(["bytes32", "address"], [seed, await contract.getAddress()]));
+    await contract.connect(deployer).commitReveal(commit);
+    await contract.connect(deployer).finalizeReveal(seed);
+
+    const uri0 = await contract.tokenURI(0);
+    expect(uri0.startsWith("ipfs://real-base/")).to.equal(true);
+    expect(uri0.endsWith(".json")).to.equal(true);
   });
 });
 

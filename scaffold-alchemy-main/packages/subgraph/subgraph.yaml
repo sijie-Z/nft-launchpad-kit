@@ -1,0 +1,195 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  # Factory contract — tracks new collection deployments
+  - kind: ethereum
+    name: NFTLaunchpadKitFactory
+    network: sepolia
+    source:
+      address: "0x1e320041d3106022965C7846EE7bcbceab65a8e1"
+      abi: NFTLaunchpadKitFactory
+      startBlock: 5800000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Collection
+        - PlatformStats
+      abis:
+        - name: NFTLaunchpadKitFactory
+          file: ./abis/NFTLaunchpadKitFactory.json
+      eventHandlers:
+        - event: CollectionCloned(indexed address,indexed address,string,string,uint256)
+          handler: handleCollectionCloned
+      file: ./src/mappings.ts
+
+  # Implementation contract — tracks all mint/config/withdraw events
+  # Also indexes clones via Transfer events
+  - kind: ethereum
+    name: NFTLaunchpadKit
+    network: sepolia
+    source:
+      address: "0x7597D0D4e46Ad4E35bFfe8a52616d809765F4B22"
+      abi: NFTLaunchpadKit
+      startBlock: 5800000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Collection
+        - MintRecord
+        - Wallet
+        - DailySnapshot
+        - PlatformStats
+        - ClaimPhase
+        - FundSplit
+        - Withdrawal
+        - ConfigChange
+      abis:
+        - name: NFTLaunchpadKit
+          file: ./abis/NFTLaunchpadKit.json
+      eventHandlers:
+        # Mint tracking
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: MintedBySignature(indexed address,uint256,uint256)
+          handler: handleMintedBySignature
+        - event: MintedByAllowlist(indexed address,uint256)
+          handler: handleMintedByAllowlist
+        - event: MintedByAuction(indexed address,uint256,uint256)
+          handler: handleMintedByAuction
+        - event: MintedByERC20(indexed address,uint256,uint256)
+          handler: handleMintedByERC20
+        # Claim Conditions
+        - event: ClaimConditionsSet(uint256)
+          handler: handleClaimConditionsSet
+        - event: ClaimConditionUpdated(indexed uint256)
+          handler: handleClaimConditionUpdated
+        - event: PhaseAdvanced(indexed uint256,indexed uint256)
+          handler: handlePhaseAdvanced
+        - event: Claimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleClaimed
+        # Fund events
+        - event: FundsSplit(address[],uint256[])
+          handler: handleFundsSplit
+        - event: Withdraw(indexed address,uint256)
+          handler: handleWithdraw
+        - event: TokenWithdrawn(indexed address,indexed address,uint256)
+          handler: handleTokenWithdrawn
+        # Configuration events
+        - event: SaleStateChanged(indexed bool)
+          handler: handleSaleStateChanged
+        - event: AllowlistSaleStateChanged(indexed bool)
+          handler: handleAllowlistSaleStateChanged
+        - event: MintPriceUpdated(uint256)
+          handler: handleMintPriceUpdated
+        - event: MaxPerWalletUpdated(uint256)
+          handler: handleMaxPerWalletUpdated
+        - event: MerkleRootUpdated(indexed bytes32)
+          handler: handleMerkleRootUpdated
+        - event: DutchAuctionConfigured(uint256,uint256,uint256,uint256)
+          handler: handleDutchAuctionConfigured
+        - event: TrustedSignerUpdated(indexed address)
+          handler: handleTrustedSignerUpdated
+        - event: RoyaltyUpdated(indexed address,uint96)
+          handler: handleRoyaltyUpdated
+        - event: ERC20TokenAccepted(indexed address,uint256)
+          handler: handleERC20TokenAccepted
+        - event: BaseURIUpdated(string)
+          handler: handleBaseURIUpdated
+        - event: PreRevealURIUpdated(string)
+          handler: handlePreRevealURIUpdated
+        - event: PausedStateChanged(indexed bool)
+          handler: handlePausedStateChanged
+        # Delayed Reveal
+        - event: DelayedRevealSet(indexed bytes32,indexed uint256)
+          handler: handleDelayedRevealSet
+        - event: DelayedRevealRevealed(string,indexed uint256)
+          handler: handleDelayedRevealRevealed
+        # Ownership & roles
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+      file: ./src/mappings.ts
+
+templates:
+  - kind: ethereum
+    name: NFTLaunchpadKitClone
+    network: sepolia
+    source:
+      abi: NFTLaunchpadKit
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Collection
+        - MintRecord
+        - Wallet
+        - DailySnapshot
+        - PlatformStats
+        - ClaimPhase
+        - FundSplit
+        - Withdrawal
+        - ConfigChange
+      abis:
+        - name: NFTLaunchpadKit
+          file: ./abis/NFTLaunchpadKit.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: MintedBySignature(indexed address,uint256,uint256)
+          handler: handleMintedBySignature
+        - event: MintedByAllowlist(indexed address,uint256)
+          handler: handleMintedByAllowlist
+        - event: MintedByAuction(indexed address,uint256,uint256)
+          handler: handleMintedByAuction
+        - event: MintedByERC20(indexed address,uint256,uint256)
+          handler: handleMintedByERC20
+        - event: ClaimConditionsSet(uint256)
+          handler: handleClaimConditionsSet
+        - event: ClaimConditionUpdated(indexed uint256)
+          handler: handleClaimConditionUpdated
+        - event: PhaseAdvanced(indexed uint256,indexed uint256)
+          handler: handlePhaseAdvanced
+        - event: Claimed(indexed address,indexed uint256,uint256,uint256)
+          handler: handleClaimed
+        - event: FundsSplit(address[],uint256[])
+          handler: handleFundsSplit
+        - event: Withdraw(indexed address,uint256)
+          handler: handleWithdraw
+        - event: TokenWithdrawn(indexed address,indexed address,uint256)
+          handler: handleTokenWithdrawn
+        - event: SaleStateChanged(indexed bool)
+          handler: handleSaleStateChanged
+        - event: AllowlistSaleStateChanged(indexed bool)
+          handler: handleAllowlistSaleStateChanged
+        - event: MintPriceUpdated(uint256)
+          handler: handleMintPriceUpdated
+        - event: MaxPerWalletUpdated(uint256)
+          handler: handleMaxPerWalletUpdated
+        - event: MerkleRootUpdated(indexed bytes32)
+          handler: handleMerkleRootUpdated
+        - event: DutchAuctionConfigured(uint256,uint256,uint256,uint256)
+          handler: handleDutchAuctionConfigured
+        - event: TrustedSignerUpdated(indexed address)
+          handler: handleTrustedSignerUpdated
+        - event: RoyaltyUpdated(indexed address,uint96)
+          handler: handleRoyaltyUpdated
+        - event: ERC20TokenAccepted(indexed address,uint256)
+          handler: handleERC20TokenAccepted
+        - event: BaseURIUpdated(string)
+          handler: handleBaseURIUpdated
+        - event: PreRevealURIUpdated(string)
+          handler: handlePreRevealURIUpdated
+        - event: PausedStateChanged(indexed bool)
+          handler: handlePausedStateChanged
+        - event: DelayedRevealSet(indexed bytes32,indexed uint256)
+          handler: handleDelayedRevealSet
+        - event: DelayedRevealRevealed(string,indexed uint256)
+          handler: handleDelayedRevealRevealed
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+      file: ./src/mappings.ts

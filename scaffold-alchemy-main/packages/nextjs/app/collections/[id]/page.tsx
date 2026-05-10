@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { NFTMintUI } from "~~/components/NFTMintUI";
+import scaffoldConfig from "~~/scaffold.config";
+import { getBlockExplorerTxLink } from "~~/utils/scaffold-alchemy/networks";
 
 interface CollectionDetail {
   id: string;
@@ -42,14 +44,25 @@ export default function CollectionDetailPage() {
   const { address } = useAccount();
   const [collection, setCollection] = useState<CollectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const chainId = scaffoldConfig.targetNetworks[0].id;
 
   useEffect(() => {
     const fetchCollection = async () => {
-      const res = await fetch(`/api/collections/${params.id}`);
-      if (res.ok) {
-        setCollection(await res.json());
+      try {
+        const res = await fetch(`/api/collections/${params.id}`);
+        if (res.ok) {
+          setCollection(await res.json());
+        } else if (res.status === 404) {
+          // collection stays null → "Not Found" UI
+        } else {
+          setError("Failed to load collection. Please try again.");
+        }
+      } catch {
+        setError("Network error. Please check your connection.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchCollection();
   }, [params.id]);
@@ -58,6 +71,35 @@ export default function CollectionDetailPage() {
     return (
       <div className="min-h-screen bg-base-200 flex items-center justify-center">
         <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Something Went Wrong</h1>
+          <p className="text-base-content/50 mb-6">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+            <Link href="/collections" className="btn btn-ghost">
+              Back to Collections
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -85,19 +127,19 @@ export default function CollectionDetailPage() {
           <Link href="/collections" className="btn btn-ghost btn-sm mb-4">
             ← Back
           </Link>
-          <div className="flex items-start gap-6">
-            <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-5xl font-bold text-primary/30 overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-4xl sm:text-5xl font-bold text-primary/30 overflow-hidden shrink-0">
               {collection.coverImage ? (
                 <img src={collection.coverImage} alt={collection.name} className="w-full h-full object-cover" />
               ) : (
                 collection.name.charAt(0)
               )}
             </div>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold">{collection.name}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold">{collection.name}</h1>
               <p className="text-base-content/60 mt-1">{collection.symbol}</p>
               {collection.description && <p className="mt-2">{collection.description}</p>}
-              <div className="flex gap-4 mt-3 text-sm">
+              <div className="flex flex-wrap gap-2 sm:gap-4 mt-3 text-sm">
                 <span className={`badge ${collection.status === "active" ? "badge-success" : "badge-info"}`}>
                   {collection.status}
                 </span>
@@ -106,13 +148,13 @@ export default function CollectionDetailPage() {
                 <span>Per Wallet: {collection.maxPerWallet}</span>
               </div>
               {collection.contractAddress && (
-                <p className="text-xs text-base-content/40 mt-2 font-mono">
+                <p className="text-xs text-base-content/40 mt-2 font-mono truncate">
                   Contract: {collection.contractAddress}
                 </p>
               )}
             </div>
             {isOwner && (
-              <Link href="/admin" className="btn btn-outline btn-sm">
+              <Link href="/admin" className="btn btn-outline btn-sm shrink-0">
                 Manage
               </Link>
             )}
@@ -120,7 +162,7 @@ export default function CollectionDetailPage() {
         </div>
 
         {/* Stats */}
-        <div className="stats shadow w-full mb-8">
+        <div className="stats shadow w-full mb-8 overflow-x-auto">
           <div className="stat">
             <div className="stat-title">Total Mints</div>
             <div className="stat-value">{collection._count.mintRecords}</div>
@@ -166,8 +208,8 @@ export default function CollectionDetailPage() {
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {collection.mintRecords.map(mint => (
                       <div key={mint.id} className="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-                        <div>
-                          <p className="font-mono text-sm">
+                        <div className="min-w-0">
+                          <p className="font-mono text-sm truncate">
                             {mint.minterAddress.slice(0, 6)}...{mint.minterAddress.slice(-4)}
                           </p>
                           <p className="text-xs text-base-content/40">
@@ -175,10 +217,10 @@ export default function CollectionDetailPage() {
                           </p>
                         </div>
                         <a
-                          href={`https://sepolia.etherscan.io/tx/${mint.txHash}`}
+                          href={getBlockExplorerTxLink(chainId, mint.txHash)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="link link-primary text-xs"
+                          className="link link-primary text-xs shrink-0 ml-2"
                         >
                           Tx ↗
                         </a>

@@ -1,0 +1,12 @@
+{
+  "sepolia": {
+    "NFTLaunchpadKitFactory": {
+      "address": "0x1e320041d3106022965C7846EE7bcbceab65a8e1",
+      "startBlock": 5800000
+    },
+    "NFTLaunchpadKit": {
+      "address": "0x7597D0D4e46Ad4E35bFfe8a52616d809765F4B22",
+      "startBlock": 5800000
+    }
+  }
+}

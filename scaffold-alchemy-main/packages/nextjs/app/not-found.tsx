@@ -11,9 +11,12 @@ export default function NotFound() {
         <p className="text-base-content/50 mb-8">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
         </p>
-        <div className="flex gap-3 justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           <Link href="/" className="btn btn-primary">
             Mint NFT
+          </Link>
+          <Link href="/collections" className="btn btn-ghost">
+            Browse Collections
           </Link>
           <Link href="/admin" className="btn btn-ghost">
             Admin Panel

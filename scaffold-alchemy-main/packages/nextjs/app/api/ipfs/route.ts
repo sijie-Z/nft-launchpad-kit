@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { RATE_LIMITS, checkRateLimit, getClientIp } from "~~/lib/rateLimit";
 
 // POST /api/ipfs — 上传元数据到 IPFS (Pinata)
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(`ipfs:${ip}`, RATE_LIMITS.strict);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again later." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+      );
+    }
+
     const body = await req.json();
     const { name, description, image, attributes } = body;
 

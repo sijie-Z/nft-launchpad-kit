@@ -1,0 +1,146 @@
+type Collection @entity {
+  "Contract address (lowercase)"
+  id: Bytes!
+  name: String!
+  symbol: String!
+  owner: Bytes!
+  maxSupply: BigInt!
+  maxPerWallet: BigInt!
+  mintPrice: BigInt!
+  saleIsActive: Boolean!
+  allowlistSaleIsActive: Boolean!
+  acceptedToken: Bytes
+  baseURI: String
+  preRevealURI: String
+  revealed: Boolean!
+  "Total minted count"
+  totalMinted: BigInt!
+  "Unique minters count"
+  uniqueMinters: BigInt!
+  "Total revenue in wei"
+  totalRevenue: BigInt!
+  "Total withdrawal amount in wei"
+  totalWithdrawn: BigInt!
+  "Total mint transactions (not quantity)"
+  mintTxCount: BigInt!
+  "ERC2981 royalty receiver"
+  royaltyReceiver: Bytes
+  "ERC2981 royalty BPS"
+  royaltyBps: BigInt!
+  deployBlock: BigInt!
+  deployTimestamp: BigInt!
+  txHash: Bytes!
+}
+
+type MintRecord @entity {
+  "txHash-logIndex"
+  id: Bytes!
+  collection: Collection!
+  minter: Bytes!
+  tokenId: BigInt!
+  quantity: BigInt!
+  "eth / erc20 / claim"
+  paymentType: String!
+  "mint / allowlist / auction / signature / erc20 / claim"
+  mintType: String!
+  "ETH value paid (0 for free mints)"
+  ethPaid: BigInt!
+  "ERC20 amount paid (0 for ETH mints)"
+  tokenPaid: BigInt!
+  phaseId: BigInt
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Wallet @entity {
+  "Wallet address (lowercase)"
+  id: Bytes!
+  "Unique collections minted from"
+  collectionCount: BigInt!
+  "Total NFTs minted"
+  totalMinted: BigInt!
+  "Total ETH spent in wei"
+  totalEthSpent: BigInt!
+  firstMintAt: BigInt!
+  lastMintAt: BigInt!
+}
+
+type DailySnapshot @entity {
+  "collectionAddress-date"
+  id: Bytes!
+  collection: Collection!
+  date: String!
+  mintCount: BigInt!
+  uniqueMinters: BigInt!
+  ethVolume: BigInt!
+  newMinters: BigInt!
+  txCount: BigInt!
+}
+
+type PlatformStats @entity {
+  "singleton"
+  id: Bytes!
+  totalCollections: BigInt!
+  totalMinted: BigInt!
+  totalUniqueMinters: BigInt!
+  totalEthVolume: BigInt!
+  totalMintTxs: BigInt!
+  lastUpdated: BigInt!
+}
+
+type ClaimPhase @entity {
+  "collection-phaseId"
+  id: Bytes!
+  collection: Collection!
+  phaseId: BigInt!
+  startTimestamp: BigInt!
+  maxSupply: BigInt!
+  supplyClaimed: BigInt!
+  quantityLimitPerWallet: BigInt!
+  currency: Bytes!
+  pricePerToken: BigInt!
+  merkleRoot: Bytes!
+  metadata: String
+  isActive: Boolean!
+  updatedAt: BigInt!
+}
+
+type FundSplit @entity {
+  "txHash-logIndex"
+  id: Bytes!
+  collection: Collection!
+  recipients: [Bytes!]!
+  amounts: [BigInt!]!
+  totalAmount: BigInt!
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Withdrawal @entity {
+  "txHash-logIndex"
+  id: Bytes!
+  collection: Collection!
+  to: Bytes!
+  amount: BigInt!
+  "eth / erc20"
+  withdrawalType: String!
+  token: Bytes
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type ConfigChange @entity {
+  "txHash-logIndex"
+  id: Bytes!
+  collection: Collection!
+  "sale / allowlist / price / limit / merkle / auction / signer / royalty / erc20 / baseuri / prereveal / pause"
+  changeType: String!
+  newValue: String!
+  oldValue: String
+  txHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}

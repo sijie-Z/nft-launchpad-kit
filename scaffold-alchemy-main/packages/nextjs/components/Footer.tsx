@@ -32,7 +32,7 @@ export const Footer = () => {
           <span>·</span>
           <span>{networkName}</span>
           <span>·</span>
-          <span>ERC-721</span>
+          <span>ERC-721A</span>
         </div>
       </div>
     </div>

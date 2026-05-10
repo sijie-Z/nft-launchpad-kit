@@ -2,11 +2,8 @@
 
 import { formatEther } from "viem";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-alchemy";
+import scaffoldConfig from "~~/scaffold.config";
 
-/**
- * 集合元数据展示栏
- * 显示合约标准、版税、链、供应量等关键信息
- */
 export function CollectionStats() {
   const { data: supply } = useScaffoldReadContract({
     contractName: "NFTLaunchpadKit",
@@ -24,16 +21,44 @@ export function CollectionStats() {
     contractName: "NFTLaunchpadKit",
     functionName: "_tokenIdTracker",
   });
+  const { data: saleOn } = useScaffoldReadContract({
+    contractName: "NFTLaunchpadKit",
+    functionName: "saleIsActive",
+  });
+  const { data: allowOn } = useScaffoldReadContract({
+    contractName: "NFTLaunchpadKit",
+    functionName: "allowlistSaleIsActive",
+  });
+  const { data: paused } = useScaffoldReadContract({
+    contractName: "NFTLaunchpadKit",
+    functionName: "paused",
+  });
+  const { data: royaltyInfo } = useScaffoldReadContract({
+    contractName: "NFTLaunchpadKit",
+    functionName: "royaltyInfo",
+    args: [1n, 10000n],
+  });
+
+  const chainName = scaffoldConfig.targetNetworks[0].name || "Unknown";
+  const royaltyBps = royaltyInfo ? Number(royaltyInfo[1]) : 0;
+  const royaltyPct = royaltyBps > 0 ? `${(royaltyBps / 100).toFixed(1)}%` : "None";
+
+  let status = "Paused";
+  if (!paused) {
+    if (saleOn) status = "Public Sale";
+    else if (allowOn) status = "Allowlist";
+    else status = "Live";
+  }
 
   const items = [
-    { label: "Standard", value: "ERC-721" },
-    { label: "Chain", value: "Sepolia" },
+    { label: "Standard", value: "ERC-721A" },
+    { label: "Chain", value: chainName },
     { label: "Supply", value: supply?.toString() || "—" },
     { label: "Minted", value: minted?.toString() || "0" },
     { label: "Price", value: price ? `${formatEther(price)} ETH` : "—" },
     { label: "Limit", value: perWallet ? `${perWallet}/wallet` : "—" },
-    { label: "Royalty", value: "5%" },
-    { label: "Status", value: "Live" },
+    { label: "Royalty", value: royaltyPct },
+    { label: "Status", value: status },
   ];
 
   return (
