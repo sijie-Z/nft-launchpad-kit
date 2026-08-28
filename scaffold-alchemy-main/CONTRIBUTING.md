@@ -1,92 +1,68 @@
-# Welcome to Scaffold-Alchemy Contributing Guide
+# NFT Launchpad Kit — 贡献指南
 
-Thank you for investing your time in contributing to Scaffold-Alchemy!
+感谢你参与 NFT Launchpad Kit 的开发！
 
-This guide aims to provide an overview of the contribution workflow to help us make the contribution process effective for everyone involved.
+## 项目简介
 
-## About the Project
+一站式 NFT 发行平台：Solidity (Hardhat) + Next.js 14。6 种铸造模式 + Factory Clone + 管理后台 + The Graph 子图。
+代码在 `scaffold-alchemy-main/` 工作区内（yarn 3 workspaces：`packages/hardhat` + `packages/nextjs`）。
 
-Scaffold-Alchemy is a starter project forked from the popular [Scaffold ETH 2 tool](https://scaffoldeth.io/).
+## 开发流程（核心约定）
 
-Read the [README](README.md) to get an overview of the project.
+**一个 issue → 一个分支 → 一个 PR → CI 全绿 → 合并**
 
-### Vision
+1. 所有改动必须先有 **issue**（功能/修复/文档均可），issue 里有验收标准。
+2. 分支命名：`feat/<issue号>-<英文短描述>`，例如 `feat/3-ci-contract-job`。
+3. 提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/)：
+   ```
+   feat: 添加 xxx（#12）
+   fix: 修复 xxx（#7）
+   chore: 清理 xxx（#2）
+   docs: 更新 xxx（#16）
+   ci: 调整 xxx（#4）
+   ```
+4. PR 标题格式：`[#issue号] 一句话描述`；PR 描述自动关联 issue（`Closes #N`）。
+5. **CI 全绿是合并的硬性条件**：
+   - 合约：编译 + 96 测试（`yarn hardhat:test`）
+   - 前端：`tsc --noEmit` 零错误 + 74 Vitest 用例 + lint 零 error
+   - 目标：PR CI ≤ 5 分钟（两个 Job 并行）。PR 阶段不跑 `next build`（合并到 main 后由 build workflow 跑真构建）。
+6. 合并策略：**squash merge**，保持 main 历史干净。
 
-The goal of Scaffold-Alchemy is to provide the primary building blocks for a decentralized application.
+## 本地开发
 
-The repo can be forked to include integrations and more features, but we want to keep the `main` branch simple and minimal.
+```bash
+cd scaffold-alchemy-main
+yarn install --immutable
 
-### Project Status
+# 合约
+yarn hardhat:compile        # 编译 Solidity
+yarn hardhat:test           # 96 个合约测试（本地带 gas 报告）
 
-The project is under active development.
+# 前端
+yarn workspace @scaffold-alchemy/nextjs check-types   # 类型检查
+yarn workspace @scaffold-alchemy/nextjs test          # 74 个 Vitest 用例
+yarn workspace @scaffold-alchemy/nextjs lint          # lint
+yarn workspace @scaffold-alchemy/nextjs build         # 生产构建
 
-You can view the open Issues, follow the development process, and contribute to the project.
+# 本地起前端（默认端口 56900）
+yarn start
+```
 
-### Rules
+环境变量：复制根目录 `.env.example` 为 `.env` 并填写。**严禁把真实密钥（Alchemy API Key、私钥）提交进仓库** —— 一律走环境变量 / GitHub Secrets。
 
-1. All code contributions require an Issue to be created and agreed upon by core contributors before submitting a Pull Request. This ensures proper discussion, alignment, and consensus on the proposed changes.
-2. Contributors must be humans, not bots.
-3. First-time contributions must not contain only spelling or grammatical fixes.
+## Issue 规范
 
-## Getting started
+- 用模板创建（feature / bug），填验收标准。
+- 提交前搜索是否已有相同 issue，避免重复。
 
-You can contribute to this repo in many ways:
+## PR 规范
 
-- Solve open issues
-- Report bugs or feature requests
-- Improve the documentation
+- 一个 PR 只解决一个 issue（除非 issue 明确说明拆分）。
+- PR 描述：改动内容 / 验证结果 / 注意事项。
+- 若 PR 涉及决策（保留/删除功能），在描述里写明依据。
+- 修改 PR 时根据 review 意见更新，解决对话后再请求 review。
 
-Contributions are made via Issues and Pull Requests (PRs). A few general guidelines for contributions:
+## 安全提示
 
-- Search for existing Issues and PRs before creating your own.
-- Contributions should only fix/add the functionality in the issue OR address style issues, not both.
-- If you're running into an error, please give context. Explain what you're trying to do and how to reproduce the error.
-- Please use the same formatting in the code repository. You can configure your IDE to do it by using the prettier / linting config files included in each package.
-- If applicable, please edit the README.md file to reflect the changes.
-
-### Issues
-
-Issues should be used to report problems, request a new feature, or discuss potential changes before a PR is created.
-
-#### Solve an issue
-
-Scan through our [existing issues](https://github.com/alchemyplatform/scaffold-alchemy/issues) to find one that interests you.
-
-If a contributor is working on the issue, they will be assigned to the individual. If you find an issue to work on, you are welcome to assign it to yourself and open a PR with a fix for it.
-
-#### Create a new issue
-
-If a related issue doesn't exist, you can open a new issue.
-
-Some tips to follow when you are creating an issue:
-
-- Provide as much context as possible. Over-communicate to give the most details to the reader.
-- Include the steps to reproduce the issue or the reason for adding the feature.
-- Screenshots, videos, etc., are highly appreciated.
-
-### Pull Requests
-
-#### Pull Request Process
-
-We follow the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
-
-1. Fork the repo
-2. Clone the project
-3. Create a new branch with a descriptive name
-4. Commit your changes to the new branch
-5. Push changes to your fork
-6. Open a PR in our repository and tag one of the maintainers to review your PR
-
-Here are some tips for a high-quality pull request:
-
-- Create a title for the PR that accurately defines the work done.
-- Structure the description neatly to make it easy to consume by the readers. For example, you can include bullet points and screenshots instead of having one large paragraph.
-- Add the link to the issue if applicable.
-- Have a good commit message that summarises the work done.
-
-Once you submit your PR:
-
-- We may ask questions, request additional information, or ask for changes to be made before a PR can be merged. Please note that these are to make the PR clear for everyone involved and aim to create a frictionless interaction process.
-- As you update your PR and apply changes, mark each conversation resolved.
-
-Once the PR is approved, we'll "squash-and-merge" to keep the git commit history clean.
+- 密钥只放在本地 `.env`（已 gitignore）和 GitHub Secrets 中。
+- 涉及资金操作的合约改动，务必补安全回归测试（见 `test/NFTLaunchpadKit.audit.ts` 的清单模式）。

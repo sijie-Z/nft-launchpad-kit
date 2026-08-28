@@ -1,0 +1,38 @@
+name: Feature request
+description: 新功能 / 改进请求
+title: "[feature] 简短的标题"
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: 为什么要做这个功能？解决了什么问题？
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 改动范围
+      description: 涉及哪些模块/文件（合约、前端、CI、文档…）？给出大致的实现思路。
+      placeholder: |
+        - 合约：新增/修改 xxx 函数
+        - 前端：xxx 组件
+        - CI：xxx workflow
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 完成这个 issue 的可检查标准（PR 合并前逐条勾选）。
+      placeholder: |
+        - [ ] 本地 + CI 测试全绿
+        - [ ] 文档同步更新
+    validations:
+      required: true
+  - type: input
+    id: related
+    attributes:
+      label: 关联 issue / PR
+      description: 如有依赖的其他 issue，填编号
