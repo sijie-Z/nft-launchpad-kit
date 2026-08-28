@@ -27,11 +27,10 @@ import { ethers } from "hardhat";
 describe("NFTLaunchpadKit — Audit Coverage", function () {
   let deployer: any;
   let user: any;
-  let other: any;
   let contract: any;
 
   async function deploy() {
-    [deployer, user, other] = await ethers.getSigners();
+    [deployer, user] = await ethers.getSigners();
     const Factory = await ethers.getContractFactory("NFTLaunchpadKit");
     contract = await Factory.deploy(
       deployer.address,
@@ -124,7 +123,6 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
       await ethers.provider.send("evm_setNextBlockTimestamp", [now + 50]);
       await ethers.provider.send("evm_mine", []);
 
-      const price = await contract.currentAuctionPrice();
       const overpay = ethers.parseEther("0.1");
       const balBefore = await ethers.provider.getBalance(user.address);
       const tx = await contract
