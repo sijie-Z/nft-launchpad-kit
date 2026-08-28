@@ -62,6 +62,11 @@ const config: HardhatUserConfig = {
       sepolia: etherscanApiKey || "",
     },
   },
+  gasReporter: {
+    // Local: `yarn hardhat:test` sets REPORT_GAS=true → report printed.
+    // CI: GitHub Actions always sets CI=true → disabled to keep the pipeline fast.
+    enabled: process.env.REPORT_GAS === "true" && process.env.CI !== "true",
+  },
 };
 
 export default config;
