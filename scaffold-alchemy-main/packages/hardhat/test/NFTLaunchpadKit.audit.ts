@@ -286,6 +286,56 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
   });
 
   // ============================================================
+  // #8 security review: payout split recovery + dust sweep
+  // ============================================================
+  describe("Payout split fixes (#8)", () => {
+    it("setPayoutRecipients([], []) clears split mode and re-enables withdraw()", async () => {
+      await contract.connect(deployer).setPayoutRecipients([deployer.address], [10000]);
+      await contract.connect(deployer).setSaleState(true);
+      await contract.connect(user).mint(1, { value: ethers.parseEther("0.01") });
+
+      // withdraw() is blocked while a split is configured
+      await expect(
+        contract.connect(deployer).withdraw(),
+      ).to.be.revertedWithCustomError(contract, "UseWithdrawSplit");
+
+      // Clearing the split re-enables withdraw() so funds are never stuck
+      await expect(
+        contract.connect(deployer).setPayoutRecipients([], []),
+      ).to.emit(contract, "PayoutRecipientsUpdated");
+
+      const balBefore = await ethers.provider.getBalance(deployer.address);
+      const tx = await contract.connect(deployer).withdraw();
+      const receipt = await tx.wait();
+      const gasCost = gasCostOf(receipt);
+      const balAfter = await ethers.provider.getBalance(deployer.address);
+      expect(balAfter - balBefore + gasCost).to.equal(ethers.parseEther("0.01"));
+    });
+
+    it("withdrawSplit() sweeps rounding dust to the owner", async () => {
+      const other = (await ethers.getSigners())[2];
+      // Owner (deployer) is deliberately NOT a recipient
+      await contract
+        .connect(deployer)
+        .setPayoutRecipients([user.address, other.address], [5000, 5000]);
+      await contract.connect(deployer).setSaleState(true);
+      await contract.connect(deployer).setMintPrice(3n);
+      // 3 wei in the contract → 50/50 split leaves exactly 1 wei of dust
+      await contract.connect(user).mint(1, { value: 3n });
+
+      const balBefore = await ethers.provider.getBalance(deployer.address);
+      const tx = await contract.connect(deployer).withdrawSplit();
+      const receipt = await tx.wait();
+      const gasCost = gasCostOf(receipt);
+      const balAfter = await ethers.provider.getBalance(deployer.address);
+
+      // The odd wei went to the owner; nothing is left stuck in the contract
+      expect(balAfter - balBefore + gasCost).to.equal(1n);
+      expect(await ethers.provider.getBalance(await contract.getAddress())).to.equal(0n);
+    });
+  });
+
+  // ============================================================
   // 14. MAX_BATCH_SIZE exceeded
   // ============================================================
   describe("Batch size limit", () => {

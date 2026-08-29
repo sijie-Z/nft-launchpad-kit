@@ -201,7 +201,6 @@ describe("NFTLaunchpadKitFactory", function () {
     it("predicts address before deployment", async () => {
       const salt = ethers.keccak256(ethers.toUtf8Bytes("my-collection"));
       const predicted = await factory.predictCollectionAddress(salt);
-
       const tx = await factory.deployCollectionDeterministic(
         salt,
         "Predicted",
@@ -221,6 +220,18 @@ describe("NFTLaunchpadKitFactory", function () {
       const actual = factory.interface.parseLog(event!).args.cloneAddress;
 
       expect(actual).to.equal(predicted);
+    });
+
+    it("binds salt to caller — same salt from different callers yields different addresses", async () => {
+      const salt = ethers.keccak256(ethers.toUtf8Bytes("shared-salt"));
+      const predictedDeployer = await factory.predictCollectionAddress(salt);
+      const predictedOther = await factory.connect(user1).predictCollectionAddress(salt);
+      // The caller-bound salt prevents front-running a predicted CREATE2 address
+      expect(predictedOther).to.not.equal(predictedDeployer);
+
+      // Same caller, same salt → same address (deploy + predict stay consistent)
+      const predictedAgain = await factory.predictCollectionAddress(salt);
+      expect(predictedAgain).to.equal(predictedDeployer);
     });
 
     it("reverts on duplicate salt", async () => {

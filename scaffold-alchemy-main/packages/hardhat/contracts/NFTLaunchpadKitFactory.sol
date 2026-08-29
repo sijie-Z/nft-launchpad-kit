@@ -98,6 +98,9 @@ contract NFTLaunchpadKitFactory is Ownable {
         uint256 maxPerWallet,
         uint256 mintPrice
     ) external returns (address clone) {
+        // Bind the salt to the caller. Without this, anyone could front-run a
+        // predicted CREATE2 address with the same salt and grief the deployer.
+        salt = _boundSalt(msg.sender, salt);
         clone = Clones.cloneDeterministic(implementation, salt);
         if (clone == address(0)) revert DeploymentFailed();
 
@@ -118,11 +121,19 @@ contract NFTLaunchpadKitFactory is Ownable {
 
     /**
      * @dev Predicts the address of a deterministic clone before deployment.
+     *      Uses the same caller-bound salt as deployCollectionDeterministic.
      */
     function predictCollectionAddress(
         bytes32 salt
     ) external view returns (address) {
-        return Clones.predictDeterministicAddress(implementation, salt, address(this));
+        return Clones.predictDeterministicAddress(implementation, _boundSalt(msg.sender, salt), address(this));
+    }
+
+    /**
+     * @dev Binds a user salt to its caller so CREATE2 addresses are caller-specific.
+     */
+    function _boundSalt(address sender, bytes32 salt) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(sender, salt));
     }
 
     /**
