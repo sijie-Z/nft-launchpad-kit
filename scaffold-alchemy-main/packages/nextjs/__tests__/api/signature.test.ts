@@ -1,7 +1,17 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+const { mockAgentFindUnique, mockGrantCreate } = vi.hoisted(() => ({
+  mockAgentFindUnique: vi.fn(),
+  mockGrantCreate: vi.fn(),
+}));
+
 // Mock dependencies
-vi.mock("~~/lib/prisma", () => ({ prisma: {} }));
+vi.mock("~~/lib/prisma", () => ({
+  prisma: {
+    agent: { findUnique: mockAgentFindUnique },
+    agentGrant: { create: mockGrantCreate },
+  },
+}));
 vi.mock("viem/accounts", () => ({
   privateKeyToAccount: vi.fn(() => ({
     address: "0x1234567890abcdef1234567890abcdef12345678",
@@ -34,8 +44,9 @@ const validBody = {
 
 describe("POST /api/signature", () => {
   beforeEach(() => {
-    // Reset rate limiter state by using unique IPs
-    vi.restoreAllMocks();
+    // Clear call history between tests (restoreAllMocks only affects spies,
+    // not vi.fn() mocks — see the #40 grant-recording tests).
+    vi.clearAllMocks();
     process.env.SIGNER_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
   });
 
@@ -83,5 +94,26 @@ describe("POST /api/signature", () => {
     expect(body.uid).toBe("test-uid-123");
     expect(body.deadline).toBe(validBody.deadline);
     expect(body.signer).toBeDefined();
+  });
+
+  it("records a grant when agentAddress identifies a registered agent (#40)", async () => {
+    mockAgentFindUnique.mockImplementation(async () => ({ id: "agent-1", address: "0xabc" }));
+    mockGrantCreate.mockImplementation(async (args: any) => ({ id: "g1", ...args.data }));
+
+    const res = await POST(makeRequest({ ...validBody, agentAddress: "0xAbC1234567890123456789012345678901234567" }));
+    expect(res.status).toBe(200);
+
+    // Grant recorded with the agent id + scope from the request
+    const [data] = mockGrantCreate.mock.calls[0];
+    expect(data.data.agentId).toBe("agent-1");
+    expect(data.data.minter).toBe(validBody.minter.toLowerCase());
+    expect(data.data.uid).toBe("test-uid-123");
+  });
+
+  it("never fails the signing request when the agent is unknown (#40)", async () => {
+    mockAgentFindUnique.mockImplementation(async () => null);
+    const res = await POST(makeRequest({ ...validBody, agentAddress: "0xAbC1234567890123456789012345678901234567" }));
+    expect(res.status).toBe(200);
+    expect(mockGrantCreate).not.toHaveBeenCalled();
   });
 });
