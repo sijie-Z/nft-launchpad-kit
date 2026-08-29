@@ -1,0 +1,14 @@
+{
+  "name": "nla-agent-example",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent-native issuance example — an AI agent creates a collection and mints grants for users",
+  "scripts": {
+    "demo": "tsx agent-issuance.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "tsx": "^4.19.0",
+    "viem": "^2.13.0"
+  }
+}
