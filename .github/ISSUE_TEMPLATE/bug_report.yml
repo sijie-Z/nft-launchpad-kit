@@ -1,0 +1,38 @@
+name: Bug report
+description: 报告一个 bug
+title: "[bug] 简短的标题"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: phenomenon
+    attributes:
+      label: 现象
+      description: 发生了什么？预期应该是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 最小复现路径
+      placeholder: |
+        1. 执行 xxx
+        2. 触发 xxx
+        3. 看到错误/异常
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: 浏览器/Node 版本、网络（本地链 / Sepolia）、相关组件名
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 报错信息
+      description: 错误信息、console 输出、交易 hash 等（注意不要贴私钥/密钥）
+  - type: input
+    id: related
+    attributes:
+      label: 关联 issue / PR
+      description: 如由某次改动引入，填编号
