@@ -59,6 +59,21 @@ const agentWallet = createWalletClient({ account: agent, chain: hardhat, transpo
 const userWallet = createWalletClient({ account: user, chain: hardhat, transport: http(rpcUrl) });
 
 const factory = { address: factoryDeployment.address as Address, abi: factoryDeployment.abi as Abi } as const;
+
+// Minimal typed ABI for the event we care about (keeps parseEventLogs fully typed).
+const CollectionClonedAbi = [
+  {
+    type: "event",
+    name: "CollectionCloned",
+    inputs: [
+      { type: "address", name: "cloneAddress", indexed: true },
+      { type: "address", name: "owner", indexed: true },
+      { type: "string", name: "name" },
+      { type: "string", name: "symbol" },
+      { type: "uint256", name: "maxSupply" },
+    ],
+  },
+] as const;
 const kitAbi = kitDeployment.abi as Abi;
 
 const MINT_PRICE = parseEther("0.01"); // collection price (ETH)
@@ -76,7 +91,7 @@ const createTx = await agentWallet.writeContract({
 const createReceipt = await publicClient.waitForTransactionReceipt({ hash: createTx });
 const [cloneEvent] = parseEventLogs({
   logs: createReceipt.logs,
-  abi: factory.abi,
+  abi: CollectionClonedAbi,
   eventName: "CollectionCloned",
 });
 const collection = cloneEvent.args.cloneAddress as Address;
@@ -150,7 +165,11 @@ console.log("[user]   ✅ minted");
 // Step 5 — verify
 // ---------------------------------------------------------------------------
 
-const ownerOf0 = await publicClient.readContract({ ...kit, functionName: "ownerOf", args: [0n] });
+const ownerOf0 = (await publicClient.readContract({
+  ...kit,
+  functionName: "ownerOf",
+  args: [0n],
+})) as Address;
 const supply = await publicClient.readContract({ ...kit, functionName: "totalSupply" });
 const uidUsed = await publicClient.readContract({ ...kit, functionName: "isSignatureUsed", args: [grant.uid] });
 
