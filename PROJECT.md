@@ -1,5 +1,10 @@
 # NFT Launchpad Kit — 项目文档
 
+> ⚠️ **本文档为历史快照（v34，2026-05-10），部分内容已过时。**
+> 现状以代码和根目录 `README.md` 为准；开发流程见 `scaffold-alchemy-main/CONTRIBUTING.md`。
+> 已知差异：测试数现为 96 合约 + 74 前端 = 170；主合约约 1200 行；CI 已重写（见 `.github/workflows/`）。
+> 当前文档中"CI/CD ✅ 完成"等条目反映的是旧状态，实际 CI 于 2026-08 重建。
+
 > 最后更新：2026-05-10（v34 — 全 API 测试覆盖 + OpenAPI 文档 + Vercel 部署配置）
 
 ---
@@ -288,7 +293,7 @@ NFT_Launchpad_Kit/
     ├── packages/
     │   ├── hardhat/                  # 智能合约
     │   │   ├── contracts/
-    │   │   │   ├── NFTLaunchpadKit.sol   # 核心合约（~900 行，36 个事件，含 Phased Claim Conditions）
+    │   │   │   ├── NFTLaunchpadKit.sol   # 核心合约（~1200 行，29 个事件，含 Phased Claim Conditions）
     │   │   │   └── TestERC20.sol         # 测试代币
     │   │   ├── test/
     │   │   │   ├── NFTLaunchpadKit.advanced.ts  # 9 个核心测试
