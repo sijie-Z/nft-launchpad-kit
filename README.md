@@ -72,6 +72,25 @@ yarn workspace @scaffold-alchemy/nextjs test
 - `develop`：日常开发主线，feature 分支从这里拉出、PR 合入这里
 - 详细规范见 `scaffold-alchemy-main/CONTRIBUTING.md`
 
+## 多链部署（#37）
+
+支持 Sepolia（默认）与 **Base Sepolia**：
+
+```bash
+cd scaffold-alchemy-main
+
+# Sepolia（默认）
+yarn deploy:final                       # 或 npx hardhat deploy --network sepolia
+
+# Base Sepolia —— agent 经济的主场
+yarn deploy:base                        # npx hardhat deploy --network baseSepolia
+yarn verify:base                        # Etherscan/Basescan 验证（需 BASESCAN_API_KEY）
+```
+
+- 环境变量：`SEPOLIA_RPC_URL` / `BASE_SEPOLIA_RPC_URL`（缺省走 Alchemy）、`ETHERSCAN_API_KEY` / `BASESCAN_API_KEY`、`PRIVATE_KEY`
+- 部署后把合约地址写入 `packages/nextjs/contracts/deployedContracts.ts` 对应 chainId（84532 条目已预置）
+- 前端 `scaffold.config.ts` 已配置双网络（`targetNetworks[0]` = Sepolia 为主链）
+
 ## 项目结构
 
 ```

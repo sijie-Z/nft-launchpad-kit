@@ -4367,6 +4367,10 @@ const deployedContracts = {
         {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}]
     },
   },
+  84532: {
+    // Base Sepolia (#37) — addresses are written here after the first deploy:
+    //   yarn workspace @scaffold-alchemy/hardhat deploy --network baseSepolia
+  },
 } as const;
 
 export default deployedContracts satisfies GenericContractsDeclaration;
