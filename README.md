@@ -32,47 +32,58 @@
 ## 快速开始
 
 ```bash
-# 安装依赖
+# 安装依赖（yarn 3，含 prisma generate）
+cd scaffold-alchemy-main
 yarn install
 
-# 启动本地区块链
-cd packages/hardhat
-npx hardhat node
+# 合约测试
+yarn hardhat:test          # 96 个合约测试
 
-# 部署合约
-npx hardhat deploy --network localhost
-
-# 启动前端
-cd packages/nextjs
-npm run dev
+# 前端（vitest / 类型检查 / lint）
+yarn workspace @scaffold-alchemy/nextjs test          # 74 个前端测试
+yarn workspace @scaffold-alchemy/nextjs check-types   # 类型检查
+yarn workspace @scaffold-alchemy/nextjs dev           # 本地开发（端口 56900）
 ```
+
+环境变量：复制根目录 `.env.example` 为 `.env` 并填写（Alchemy API Key 等）。
+开发流程、分支/PR 规范见 `scaffold-alchemy-main/CONTRIBUTING.md`。
 
 ## 测试
 
 ```bash
-cd packages/hardhat
+cd scaffold-alchemy-main
 
-# 运行全部 82 个测试
-npx hardhat test
+# 运行全部 96 个合约测试（本地附带 gas 报告；CI 中关闭以提速）
+yarn hardhat:test
 
-# Gas 报告
-npx hardhat test --grep "Gas"
+# 前端：74 个 Vitest 用例
+yarn workspace @scaffold-alchemy/nextjs test
 ```
+
+## CI（GitHub Actions）
+
+- `ci.yml`：PR 触发 —— 合约测试 + 前端类型/测试/lint 并行，约 3-4 分钟
+- `build.yml`：合并到 main 后真实 `next build`
+- `deploy.yml`：手动触发 Sepolia 部署（GitHub Secrets）
 
 ## 项目结构
 
 ```
+scaffold-alchemy-main/       # Yarn 3 工作区
 ├── packages/
-│   ├── hardhat/              # 智能合约
+│   ├── hardhat/             # 智能合约
 │   │   ├── contracts/
-│   │   │   ├── NFTLaunchpadKit.sol        # 主合约（~950 行）
+│   │   │   ├── NFTLaunchpadKit.sol        # 主合约（~1200 行，96 测试）
 │   │   │   └── NFTLaunchpadKitFactory.sol # Clone 工厂
-│   │   ├── test/             # 测试（82 个）
-│   │   └── deploy/           # 部署脚本
-│   └── nextjs/               # 前端
-│       ├── components/       # UI 组件
-│       ├── app/              # 页面路由
-│       └── utils/            # 工具库（Merkle、签名、错误映射）
+│   │   ├── test/            # 测试（96 个）
+│   │   └── deploy/          # 部署脚本
+│   ├── nextjs/              # 前端（74 个测试）
+│   │   ├── components/      # UI 组件
+│   │   ├── app/             # 页面路由 + API
+│   │   └── utils/           # 工具库（Merkle、签名、错误映射）
+│   └── subgraph/            # The Graph 子图
+└── GAS_BASELINE.md          # Gas 回归基准
+└── TEST_BASELINE.md         # 前端测试基线
 ```
 
 ## 技术栈
