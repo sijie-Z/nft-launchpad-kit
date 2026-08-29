@@ -866,20 +866,48 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     /**
-     * @dev Feistel network permutation — maps [0, range) to [0, range) bijectively.
-     * 4 rounds with keccak256-based round function. Deterministic given seed.
+     * @dev Feistel network permutation — maps [0, range) to [0, range) BIJECTIVELY.
+     *      The underlying Feistel is a permutation over a power-of-two domain;
+     *      cycle-walking (re-apply until the result lands in [0, range)) preserves
+     *      bijectivity on the restricted domain. Fixes collisions from the old
+     *      `result % range` truncation (two tokenIds could map to one URI).
      */
     function _feistelShuffle(uint256 value, uint256 seed, uint256 range) internal pure returns (uint256) {
         if (range <= 1) return 0;
-        uint256 mask = 1;
-        while (mask * mask < range) {
-            mask = mask * 2 + 1;
+        // Pragmatic guard for absurd ranges (maxSupply is realistically <= 2^48).
+        if (range > 1 << 128) return value % range;
+        // Smallest power of two >= range — the Feistel permutation domain.
+        uint256 size = 1;
+        while (size < range) {
+            size <<= 1;
         }
-        uint256 result;
-        // Feistel network with 4 rounds
         unchecked {
-            uint256 l = value >> 128;
-            uint256 r = value & ((1 << 128) - 1);
+            uint256 result = value;
+            // Cycle-walking: expected size/range < 2 iterations, gas bounded.
+            while (result >= range) {
+                result = _feistelPermute(result, seed, size);
+            }
+            return result;
+        }
+    }
+
+    /**
+     * @dev One Feistel permutation over [0, size), size = 2^bits.
+     *      Split into two halves, 4 rounds with a keccak256 round function.
+     */
+    function _feistelPermute(uint256 value, uint256 seed, uint256 size) internal pure returns (uint256) {
+        // bits = log2(size); right half width = ceil(bits / 2).
+        uint256 bits = 0;
+        uint256 tmp = size;
+        while (tmp > 1) {
+            tmp >>= 1;
+            ++bits;
+        }
+        uint256 rightBits = (bits + 1) / 2;
+        uint256 mask = (1 << rightBits) - 1;
+        unchecked {
+            uint256 l = value >> rightBits;
+            uint256 r = value & mask;
             for (uint256 i = 0; i < 4; ) {
                 uint256 f = uint256(keccak256(abi.encodePacked(r, seed, i))) & mask;
                 uint256 newL = r;
@@ -888,9 +916,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
                 r = newR;
                 ++i;
             }
-            result = ((l << 128) | r);
+            return (l << rightBits) | r;
         }
-        return result % range;
     }
 
     /**
