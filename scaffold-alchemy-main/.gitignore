@@ -43,3 +43,7 @@ coverage.json*.db
 
 # hardhat-gas-reporter output
 packages/hardhat/gasReporterOutput.json
+
+# Prisma local dev database
+packages/nextjs/prisma/dev.db
+packages/nextjs/prisma/dev.db-journal

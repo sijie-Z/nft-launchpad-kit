@@ -106,3 +106,34 @@ model PlatformConfig {
   platformWallet String?
   updatedAt      DateTime @updatedAt
 }
+
+// Agent 身份（#40 — agent 即创作者的产品层）
+// 字段参考 agent identity 生态惯例（chancery / agent meta 等）：
+// registry = 地址注册；capabilities = 能力声明；grants = 授权审计。
+model Agent {
+  id           String   @id @default(cuid())
+  address      String   @unique
+  name         String
+  description  String?
+  capabilities String? // 能力声明（JSON 字符串），如 ["mint", "membership", "reward"]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  grants AgentGrant[]
+}
+
+// Agent 铸造授权记录（防篡改审计 —— 链上事件 + 链下记录）
+model AgentGrant {
+  id                String   @id @default(cuid())
+  agentId           String
+  collectionAddress String? // 作用域：哪个集合
+  minter            String? // 作用域：给谁
+  quantity          Int?
+  pricePerToken     String?
+  deadline          Int?
+  uid               String? @unique // 一次性授权 ID（与链上 uid 对应）
+  status            String   @default("issued") // issued | used | expired | revoked
+  createdAt         DateTime @default(now())
+
+  agent Agent @relation(fields: [agentId], references: [id])
+}
