@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Job A — smart contracts: compile + full test suite.
+  # Job B (frontend) is added in #4.
+  contracts:
+    name: Contracts (compile + test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: scaffold-alchemy-main/yarn.lock
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+        working-directory: scaffold-alchemy-main
+
+      - name: Compile contracts
+        run: yarn hardhat:compile
+        working-directory: scaffold-alchemy-main
+
+      - name: Run contract tests
+        run: yarn hardhat:test
+        working-directory: scaffold-alchemy-main
