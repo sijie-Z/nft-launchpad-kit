@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
     coverImage,
     contractAddress,
     chainId,
+    baseURI,
   } = body;
 
   if (!name || !symbol || !maxSupply || !mintPrice || !ownerAddress) {
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest) {
       coverImage,
       contractAddress: contractAddress ? contractAddress.toLowerCase() : null,
       chainId: chainId || 11155111,
+      baseURI: baseURI || null,
       ownerId: user.id,
     },
   });

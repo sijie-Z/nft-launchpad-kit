@@ -43,6 +43,13 @@ export default function CreateCollection({ onCreated }: CreateCollectionProps) {
   const [cloneAddress, setCloneAddress] = useState<string | null>(null);
   const [collectionId, setCollectionId] = useState<string | null>(null);
 
+  // AI metadata pipeline (#36)
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [metaImageUrl, setMetaImageUrl] = useState("");
+  const [metaCount, setMetaCount] = useState("100");
+  const [metaBusy, setMetaBusy] = useState(false);
+  const [baseUri, setBaseUri] = useState("");
+
   const { writeContractAsync, isPending: isDeploying } = useWriteContract();
   const [deployTxHash, setDeployTxHash] = useState<`0x${string}` | null>(null);
   const { data: deployReceipt, isError: deployFailed } = useWaitForTransactionReceipt({
@@ -117,6 +124,33 @@ export default function CreateCollection({ onCreated }: CreateCollectionProps) {
     }
   }
 
+  /** AI metadata pipeline (#36): generate N metadata files and pin the folder to IPFS. */
+  async function handleGenerateMetadata() {
+    if (!metaImageUrl.trim()) return;
+    setMetaBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/metadata/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim() || "Collection",
+          imageUrl: metaImageUrl.trim(),
+          count: Number(metaCount) || 100,
+          description: description.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "生成失败");
+      if (data.baseUri) setBaseUri(data.baseUri);
+      setError(data.mock ? "（开发模式）未配置 PINATA_JWT，返回了模拟 CID —— 配置后即为真实 IPFS 地址" : null);
+    } catch (e: any) {
+      setError(e.message || "元数据生成失败");
+    } finally {
+      setMetaBusy(false);
+    }
+  }
+
   async function handleDeploy() {
     setError(null);
     if (!address || !factory) return;
@@ -151,6 +185,7 @@ export default function CreateCollection({ onCreated }: CreateCollectionProps) {
           coverImage: coverImage || undefined,
           contractAddress: cloneAddress,
           chainId,
+          baseURI: baseUri || undefined,
         }),
       });
       const data = await res.json();
@@ -254,6 +289,52 @@ export default function CreateCollection({ onCreated }: CreateCollectionProps) {
               <span className="label-text">描述（可选）</span>
               <textarea className="textarea textarea-bordered" value={description} onChange={e => setDescription(e.target.value)} rows={2} />
             </label>
+
+            {/* AI metadata pipeline (#36) — generate + pin the whole folder in one click */}
+            <div className="border border-base-300 rounded-xl">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold"
+                onClick={() => setMetaOpen(o => !o)}
+              >
+                <span>⚡ AI 元数据生成（可选）</span>
+                <span className="text-base-content/40">{metaOpen ? "▾" : "▸"}</span>
+              </button>
+              {metaOpen && (
+                <div className="px-4 pb-4 space-y-3">
+                  <div className="text-xs text-base-content/50">
+                    输入图片 URL（支持 <code>{`{id}`}</code> 占位符）和数量，一键生成 {`{id}.json`} 元数据并打包上传 IPFS，产出可直接用作 Base URI 的地址。
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      className="input input-bordered input-sm"
+                      value={metaImageUrl}
+                      onChange={e => setMetaImageUrl(e.target.value)}
+                      placeholder="https://cdn.example.com/agents/{id}.png"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={10000}
+                      className="input input-bordered input-sm"
+                      value={metaCount}
+                      onChange={e => setMetaCount(e.target.value)}
+                      placeholder="数量（1-10000）"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button className="btn btn-sm btn-outline" onClick={handleGenerateMetadata} disabled={metaBusy || !metaImageUrl.trim()}>
+                      {metaBusy ? "生成中…" : "🚀 生成并上传"}
+                    </button>
+                    {baseUri && (
+                      <div className="text-xs text-success break-all flex-1">
+                        Base URI: <code>{baseUri}</code>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex justify-end gap-2">
               <button className="btn btn-primary" disabled={!isValid} onClick={() => setStep(1)}>
                 下一步：链上部署 →
