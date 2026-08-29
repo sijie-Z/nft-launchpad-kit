@@ -31,7 +31,6 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     error MaxSupplyExceeded();
     error WalletMintLimitExceeded();
     error NotEnoughEtherSent();
-    error ExcessEthSent();
     error NoClaimConditions();
     error PhaseNotStarted();
     error PhaseSupplyExceeded();
@@ -45,10 +44,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     error NoBalance();
     error WithdrawFailed();
     error NoAcceptedToken();
-    error ERC20TransferFailed();
     error LengthMismatch();
     error InvalidBpsSum();
-    error PayoutFailed();
     error NoOperatorRole();
     error SignatureExpired();
     error NoSigner();
