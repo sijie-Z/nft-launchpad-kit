@@ -432,6 +432,31 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
       }
     });
 
+    it("is bijective over the full range (no URI collisions)", async () => {
+      // Exhaustive check: with maxSupply=20, all 20 tokenURIs must be distinct.
+      const Impl = await ethers.getContractFactory("NFTLaunchpadKit");
+      const small = await Impl.deploy(deployer.address, ethers.parseEther("0.01"), 20, 20);
+      await small.waitForDeployment();
+      await small.setBaseURI("ipfs://base/");
+      await small.setPreRevealURI("ipfs://placeholder/");
+      await small.setSaleState(true);
+      await small.setMaxPerWallet(20);
+      await small.connect(user).mint(20, { value: ethers.parseEther("0.20") });
+
+      const seed = ethers.keccak256(ethers.toUtf8Bytes("bijective-test"));
+      const commit = ethers.keccak256(
+        ethers.solidityPacked(["bytes32", "address"], [seed, await small.getAddress()]),
+      );
+      await small.commitReveal(commit);
+      await small.finalizeReveal(seed);
+
+      const uris = new Set<string>();
+      for (let i = 0; i < 20; i++) {
+        uris.add(await small.tokenURI(i));
+      }
+      expect(uris.size).to.equal(20); // every tokenId maps to a unique URI
+    });
+
     it("single token (range=1) always maps to 0", async () => {
       // Deploy with maxSupply=1
       const Factory = await ethers.getContractFactory("NFTLaunchpadKit");
