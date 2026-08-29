@@ -35,3 +35,41 @@ jobs:
       - name: Run contract tests
         run: yarn hardhat:test
         working-directory: scaffold-alchemy-main
+
+  # Job B — frontend: typecheck (tsc) + unit tests (vitest) + lint.
+  # Runs in parallel with Job A; no `next build` here to keep PR CI under 5 minutes.
+  frontend:
+    name: Frontend (types + tests + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: scaffold-alchemy-main/yarn.lock
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+        working-directory: scaffold-alchemy-main
+
+      - name: Typecheck
+        run: yarn workspace @scaffold-alchemy/nextjs check-types
+        working-directory: scaffold-alchemy-main
+
+      - name: Run frontend tests
+        run: yarn workspace @scaffold-alchemy/nextjs test
+        working-directory: scaffold-alchemy-main
+
+      - name: Lint frontend
+        run: yarn next:lint
+        working-directory: scaffold-alchemy-main
+
+      - name: Lint contracts
+        run: yarn hardhat:lint
+        working-directory: scaffold-alchemy-main
+
