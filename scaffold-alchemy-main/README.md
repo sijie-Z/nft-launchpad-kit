@@ -1,4 +1,8 @@
-# 🏗 Scaffold-Alchemy
+# 🏗 Scaffold-Alchemy（本项目工作区）
+
+> 本目录是 NFT Launchpad Kit 的 Yarn 3 工作区（`packages/hardhat` + `packages/nextjs` + `packages/subgraph`）。
+> **项目文档见仓库根目录 `README.md`**；开发流程见本目录 `CONTRIBUTING.md`；测试基线见 `TEST_BASELINE.md` / `GAS_BASELINE.md`。
+> 下方为 scaffold 模板原始说明（保留备查）。
 
 Scaffold-Alchemy is a fork of the popular starter project [Scaffold-Eth 2](https://scaffoldeth.io/). It is everything you need to build dApps on Ethereum. You can get started immediately NextJS, TypeScript, Hardhat, AccountKit, Enhanced APIs and Subgraphs 🤩
 

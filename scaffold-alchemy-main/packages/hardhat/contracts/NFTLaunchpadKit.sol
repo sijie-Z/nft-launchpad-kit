@@ -31,7 +31,6 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     error MaxSupplyExceeded();
     error WalletMintLimitExceeded();
     error NotEnoughEtherSent();
-    error ExcessEthSent();
     error NoClaimConditions();
     error PhaseNotStarted();
     error PhaseSupplyExceeded();
@@ -45,10 +44,8 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     error NoBalance();
     error WithdrawFailed();
     error NoAcceptedToken();
-    error ERC20TransferFailed();
     error LengthMismatch();
     error InvalidBpsSum();
-    error PayoutFailed();
     error NoOperatorRole();
     error SignatureExpired();
     error NoSigner();
@@ -585,6 +582,15 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
      */
     function setPayoutRecipients(address[] calldata recipients, uint256[] calldata bps) external onlyOwner {
         if (recipients.length != bps.length) revert LengthMismatch();
+        // Empty arrays clear the split mode, re-enabling withdraw(). Without this,
+        // funds sent directly to the contract could never be recovered once a split
+        // was configured (withdraw() reverts while recipients exist).
+        if (recipients.length == 0) {
+            delete payoutRecipients;
+            delete payoutBps;
+            emit PayoutRecipientsUpdated(recipients, bps);
+            return;
+        }
         uint256 sum = 0;
         for (uint256 i = 0; i < bps.length; ) {
             sum += bps[i];
@@ -614,8 +620,15 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
             unchecked { ++i; }
         }
         emit FundsSplit(payoutRecipients, amounts);
-        // If any recipient failed, allow owner to call withdrawSplit again
-        // or use withdraw() to recover remaining funds
+        // Sweep rounding dust back to the owner. Each share rounds down by less
+        // than 1 wei, so the leftover is at most (numRecipients - 1) wei. If a
+        // recipient failed to receive their share, the leftover exceeds that bound
+        // and stays in the contract for a retry via withdrawSplit().
+        uint256 dust = bal - totalSent;
+        if (dust > 0 && dust <= payoutRecipients.length) {
+            (bool ok, ) = payable(owner()).call{value: dust}("");
+            if (!ok) revert WithdrawFailed();
+        }
     }
 
     /**
@@ -834,13 +847,6 @@ contract NFTLaunchpadKit is Initializable, ERC721A, Ownable, ReentrancyGuard, Pa
     }
 
     // --- URI Handling ---
-
-    /**
-     * @dev Overrides the base URI function to return the URI set by the owner.
-     */
-    function _baseURI() internal view override returns (string memory) {
-        return _baseTokenURI;
-    }
 
     /**
      * @dev Dynamic tokenURI. Returns placeholder before reveal; after reveal, uses Feistel-shuffled ID.

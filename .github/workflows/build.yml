@@ -1,0 +1,31 @@
+name: Build
+
+# Real production build on every merge to main.
+# PRs only run the fast CI (ci.yml) — no next build there to stay under 5 minutes.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build Frontend (next build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: scaffold-alchemy-main/yarn.lock
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+        working-directory: scaffold-alchemy-main
+
+      - name: Build Next.js
+        run: yarn workspace @scaffold-alchemy/nextjs build
+        working-directory: scaffold-alchemy-main
