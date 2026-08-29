@@ -63,8 +63,14 @@ yarn workspace @scaffold-alchemy/nextjs test
 ## CI（GitHub Actions）
 
 - `ci.yml`：PR 触发 —— 合约测试 + 前端类型/测试/lint 并行，约 3-4 分钟
-- `build.yml`：合并到 main 后真实 `next build`
+- `build.yml`：合并到 main/develop 后真实 `next build`
 - `deploy.yml`：手动触发 Sepolia 部署（GitHub Secrets）
+
+## 分支模型
+
+- `main`：只做发布（develop → main 的 release PR，合并后打 tag）
+- `develop`：日常开发主线，feature 分支从这里拉出、PR 合入这里
+- 详细规范见 `scaffold-alchemy-main/CONTRIBUTING.md`
 
 ## 项目结构
 
