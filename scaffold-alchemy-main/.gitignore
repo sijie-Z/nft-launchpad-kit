@@ -40,3 +40,6 @@ out
 # coverage
 coverage
 coverage.json*.db
+
+# hardhat-gas-reporter output
+packages/hardhat/gasReporterOutput.json

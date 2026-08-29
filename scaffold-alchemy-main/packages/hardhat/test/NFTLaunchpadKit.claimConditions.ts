@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { gasCostOf } from "./utils";
 
 /**
  * Phased Claim Conditions 测试套件
@@ -343,7 +344,7 @@ describe("NFTLaunchpadKit — Claim Conditions", function () {
         .connect(user)
         .claim(1, [], { value: ethers.parseEther("0.1") });
       const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * (receipt!.gasPrice ?? 0n);
+      const gasCost = gasCostOf(receipt);
       const balAfter = await ethers.provider.getBalance(user.address);
       const spent = balBefore - balAfter - gasCost;
       expect(spent).to.equal(ethers.parseEther("0.01"));

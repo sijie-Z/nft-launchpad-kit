@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { gasCostOf } from "./utils";
 
 /**
  * v11 审计补充测试 — 覆盖所有在 Bug 修复中新增的安全路径
@@ -27,11 +28,10 @@ import { ethers } from "hardhat";
 describe("NFTLaunchpadKit — Audit Coverage", function () {
   let deployer: any;
   let user: any;
-  let other: any;
   let contract: any;
 
   async function deploy() {
-    [deployer, user, other] = await ethers.getSigners();
+    [deployer, user] = await ethers.getSigners();
     const Factory = await ethers.getContractFactory("NFTLaunchpadKit");
     contract = await Factory.deploy(
       deployer.address,
@@ -83,7 +83,7 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
         .connect(user)
         .mint(1, { value: ethers.parseEther("0.1") }); // price is 0.01
       const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * (receipt!.gasPrice ?? 0n);
+      const gasCost = gasCostOf(receipt);
       const balAfter = await ethers.provider.getBalance(user.address);
       // User should only pay 0.01 + gas, not 0.1
       const spent = balBefore - balAfter - gasCost;
@@ -102,7 +102,7 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
         .connect(user)
         .mintAllowlist(1, [], { value: ethers.parseEther("0.05") });
       const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * (receipt!.gasPrice ?? 0n);
+      const gasCost = gasCostOf(receipt);
       const balAfter = await ethers.provider.getBalance(user.address);
       const spent = balBefore - balAfter - gasCost;
       expect(spent).to.equal(ethers.parseEther("0.01"));
@@ -124,14 +124,13 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
       await ethers.provider.send("evm_setNextBlockTimestamp", [now + 50]);
       await ethers.provider.send("evm_mine", []);
 
-      const price = await contract.currentAuctionPrice();
       const overpay = ethers.parseEther("0.1");
       const balBefore = await ethers.provider.getBalance(user.address);
       const tx = await contract
         .connect(user)
         .mintDutchAuction(1, { value: overpay });
       const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * (receipt!.gasPrice ?? 0n);
+      const gasCost = gasCostOf(receipt);
       const balAfter = await ethers.provider.getBalance(user.address);
       const spent = balBefore - balAfter - gasCost;
       // Should only pay the actual auction price (rounded), not the full overpay
@@ -163,7 +162,7 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
           value: ethers.parseEther("0.1"),
         });
       const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * (receipt!.gasPrice ?? 0n);
+      const gasCost = gasCostOf(receipt);
       const balAfter = await ethers.provider.getBalance(user.address);
       const spent = balBefore - balAfter - gasCost;
       expect(spent).to.equal(ethers.parseEther("0.01"));
@@ -206,7 +205,7 @@ describe("NFTLaunchpadKit — Audit Coverage", function () {
           value: ethers.parseEther("0.1"),
         });
       const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * (receipt!.gasPrice ?? 0n);
+      const gasCost = gasCostOf(receipt);
       const balAfter = await ethers.provider.getBalance(user.address);
       const spent = balBefore - balAfter - gasCost;
       expect(spent).to.equal(ethers.parseEther("0.01"));

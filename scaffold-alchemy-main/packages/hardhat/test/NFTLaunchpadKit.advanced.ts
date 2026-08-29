@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { gasCostOf } from "./utils";
 
 /**
  * 小白说明：这个测试文件会逐步验证我们在合约里加入的高级功能：
@@ -345,8 +346,7 @@ describe("NFTLaunchpadKit Advanced", function () {
     // 由所有者执行分配
     const tx = await contract.connect(deployer).withdrawSplit();
     const receipt = await tx.wait();
-    const gasPrice = receipt!.gasPrice ?? 0n;
-    const gasPaid: bigint = receipt!.gasUsed * gasPrice;
+    const gasPaid = gasCostOf(receipt);
 
     const balDeployerAfter = await ethers.provider.getBalance(deployer.address);
     const balUserAfter = await ethers.provider.getBalance(user.address);
