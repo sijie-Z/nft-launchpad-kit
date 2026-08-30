@@ -1,5 +1,5 @@
-import { ApiClient } from "./client";
-import type { MetadataInput, MetadataResult } from "./types";
+import { ApiClient } from "./client.js";
+import type { MetadataInput, MetadataResult } from "./types.js";
 
 /** Metadata — the AI pipeline: generate + pin 1000 token metadata files in ONE request. */
 export class Metadata {

@@ -1,5 +1,5 @@
-import { ApiClient } from "./client";
-import type { Agent, AgentDetail, AgentInput } from "./types";
+import { ApiClient } from "./client.js";
+import type { Agent, AgentDetail, AgentInput } from "./types.js";
 
 /** Agents — identity registry: register an agent, audit its issuance history. */
 export class Agents {

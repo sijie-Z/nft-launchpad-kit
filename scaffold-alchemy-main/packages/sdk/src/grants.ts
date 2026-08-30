@@ -1,9 +1,9 @@
 import { createPublicClient, http } from "viem";
 import type { Address } from "viem";
-import { ApiClient, type LaunchpadKitConfig } from "./client";
-import { kitAbi } from "./abis";
-import { viemChain } from "./collections";
-import type { Grant, GrantInput } from "./types";
+import { ApiClient, type LaunchpadKitConfig } from "./client.js";
+import { kitAbi } from "./abis.js";
+import { viemChain } from "./collections.js";
+import type { Grant, GrantInput } from "./types.js";
 
 const DEFAULT_MAX_MINT = 5;
 const DEFAULT_DEADLINE_S = 3600; // 1 hour
