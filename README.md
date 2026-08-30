@@ -5,8 +5,32 @@
 > and issue on-chain assets (memberships, rewards, credentials, NFTs) —
 > fully automated, fully verifiable.
 
+[![npm](https://img.shields.io/badge/npm-%40nft--launchpad--kit%2Fsdk%200.1.2-blue)](https://www.npmjs.com/package/@nft-launchpad-kit/sdk)
+[![Release](https://img.shields.io/badge/release-v1.0.0-blue)](https://github.com/sijie-Z/nft-launchpad-kit/releases/tag/v1.0.0)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Solidity (Hardhat) + Next.js 14 monorepo. 6 mint modes + Factory Clone + no-code
 creator wizard + AI metadata pipeline + admin dashboard + The Graph subgraph.
+
+## 🧩 Agent SDK (npm)
+
+Give your agent a wallet and it can create collections, sign one-time mint
+grants, and execute mints — in a few lines:
+
+```bash
+npm install @nft-launchpad-kit/sdk
+```
+
+```ts
+import { LaunchpadKit } from "@nft-launchpad-kit/sdk";
+
+const kit = new LaunchpadKit({ baseUrl, apiKey, chain: "sepolia", wallet });
+const collection = await kit.collections.create({ name: "AI Founder Pass", symbol: "AFP", supply: 1000, price: "0.01" });
+const grant = await kit.grants.issue({ collectionAddress: collection.contractAddress!, minter, quantity: 1 });
+await kit.mint.execute({ collectionAddress: collection.contractAddress!, grant });
+```
+
+Docs: [`packages/sdk/README.md`](scaffold-alchemy-main/packages/sdk/README.md) · 10-minute guide
 
 ---
 

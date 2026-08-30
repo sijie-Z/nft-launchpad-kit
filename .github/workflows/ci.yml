@@ -81,3 +81,37 @@ jobs:
         run: yarn workspace @nft-launchpad-kit/sdk test
         working-directory: scaffold-alchemy-main
 
+      - name: SDK build (ESM + CJS)
+        run: yarn workspace @nft-launchpad-kit/sdk build
+        working-directory: scaffold-alchemy-main
+
+  # Job C — subgraph: only when subgraph files change (keeps PR CI fast).
+  subgraph:
+    name: Subgraph (codegen + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check subgraph changes
+        id: subgraph-changed
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            subgraph:
+              - 'scaffold-alchemy-main/packages/subgraph/**'
+      - uses: actions/setup-node@v4
+        if: steps.subgraph-changed.outputs.subgraph == 'true'
+        with:
+          node-version: 20
+      - name: Install subgraph deps
+        if: steps.subgraph-changed.outputs.subgraph == 'true'
+        working-directory: scaffold-alchemy-main/packages/subgraph
+        run: npm ci
+      - name: Codegen
+        if: steps.subgraph-changed.outputs.subgraph == 'true'
+        working-directory: scaffold-alchemy-main/packages/subgraph
+        run: npx graph codegen
+      - name: Build
+        if: steps.subgraph-changed.outputs.subgraph == 'true'
+        working-directory: scaffold-alchemy-main/packages/subgraph
+        run: npx graph build
+
