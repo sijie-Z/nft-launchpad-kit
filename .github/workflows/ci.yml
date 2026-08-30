@@ -73,3 +73,11 @@ jobs:
         run: yarn hardhat:lint
         working-directory: scaffold-alchemy-main
 
+      - name: SDK typecheck
+        run: yarn workspace @nft-launchpad-kit/sdk check-types
+        working-directory: scaffold-alchemy-main
+
+      - name: SDK tests
+        run: yarn workspace @nft-launchpad-kit/sdk test
+        working-directory: scaffold-alchemy-main
+
