@@ -119,11 +119,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "ERC20TransferFailed",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -190,11 +185,6 @@
   {
     "inputs": [],
     "name": "EnforcedPause",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "ExcessEthSent",
     "type": "error"
   },
   {
@@ -337,11 +327,6 @@
   {
     "inputs": [],
     "name": "OwnershipNotInitializedForExtraData",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "PayoutFailed",
     "type": "error"
   },
   {
@@ -618,6 +603,44 @@
       }
     ],
     "name": "ConsecutiveTransfer",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "revealedBaseUri",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "DelayedRevealRevealed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "hashedUri",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "blockNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "DelayedRevealSet",
     "type": "event"
   },
   {
@@ -1392,6 +1415,29 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "quantity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxQty",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "proof",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "claimWithPerWalletQty",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "commitHash",
         "type": "bytes32"
@@ -1833,6 +1879,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "isDelayedRevealActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "bytes32",
@@ -2245,6 +2304,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "uri",
+        "type": "string"
+      }
+    ],
+    "name": "revealDelayedURI",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "revealSeed",
     "outputs": [
@@ -2598,6 +2670,24 @@
       }
     ],
     "name": "setDefaultRoyalty",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "encryptedUri",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "hashedUri",
+        "type": "bytes32"
+      }
+    ],
+    "name": "setDelayedRevealURI",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

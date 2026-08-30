@@ -26,7 +26,7 @@
     "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.build-cjs.json",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "demo": "tsx examples/agent-issuance.mjs"
+    "demo": "tsx examples/agent-issuance.ts"
   },
   "dependencies": {
     "viem": "^2.13.0"
