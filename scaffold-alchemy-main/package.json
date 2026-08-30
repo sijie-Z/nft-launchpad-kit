@@ -6,6 +6,7 @@
     "packages": [
       "packages/hardhat",
       "packages/nextjs",
+      "packages/sdk",
       "examples/agent"
     ]
   },
