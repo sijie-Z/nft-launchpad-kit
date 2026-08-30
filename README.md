@@ -5,6 +5,11 @@
 > and issue on-chain assets (memberships, rewards, credentials, NFTs) —
 > fully automated, fully verifiable.
 
+[![Release](https://img.shields.io/badge/release-v1.0.0-blue)](https://github.com/sijie-Z/nft-launchpad-kit/releases/tag/v1.0.0)
+[![CI](https://img.shields.io/badge/CI-3%E2%80%934%20min%20%E2%9C%85-success)]()
+[![Tests](https://img.shields.io/badge/tests-204%20%E2%9C%85-success)]()
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Solidity (Hardhat) + Next.js 14 monorepo. 6 mint modes + Factory Clone + no-code
 creator wizard + AI metadata pipeline + admin dashboard + The Graph subgraph.
 
