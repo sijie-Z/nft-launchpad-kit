@@ -1,5 +1,5 @@
 import type { PrivateKeyAccount } from "viem/accounts";
-import type { ChainId } from "./types";
+import type { ChainId } from "./types.js";
 
 export interface LaunchpadKitConfig {
   /** Base URL of your NFT Launchpad Kit instance. */

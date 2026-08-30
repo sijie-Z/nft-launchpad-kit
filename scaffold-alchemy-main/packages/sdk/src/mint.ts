@@ -1,10 +1,10 @@
 import { createPublicClient, createWalletClient, http } from "viem";
 import type { Address } from "viem";
 import type { PrivateKeyAccount } from "viem/accounts";
-import { ApiClient, type LaunchpadKitConfig } from "./client";
-import { kitAbi } from "./abis";
-import { viemChain } from "./collections";
-import type { Grant, MintResult } from "./types";
+import { ApiClient, type LaunchpadKitConfig } from "./client.js";
+import { kitAbi } from "./abis.js";
+import { viemChain } from "./collections.js";
+import type { Grant, MintResult } from "./types.js";
 
 /**
  * Mint — Level 1: execute a mint with a signed grant.

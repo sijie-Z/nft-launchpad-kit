@@ -7,9 +7,9 @@ import {
 } from "viem";
 import { baseSepolia, hardhat, sepolia } from "viem/chains";
 import type { Address, Chain } from "viem";
-import { ApiClient, type LaunchpadKitConfig } from "./client";
-import { factoryAbi, kitAbi } from "./abis";
-import type { ChainId, Collection, CollectionInput, RegisterInput } from "./types";
+import { ApiClient, type LaunchpadKitConfig } from "./client.js";
+import { factoryAbi, kitAbi } from "./abis.js";
+import type { ChainId, Collection, CollectionInput, RegisterInput } from "./types.js";
 
 const FACTORY_ADDRESSES: Record<ChainId, Address | null> = {
   sepolia: "0x1e320041d3106022965C7846EE7bcbceab65a8e1",
