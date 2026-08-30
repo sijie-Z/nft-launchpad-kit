@@ -1,6 +1,6 @@
 {
   "name": "@scaffold-alchemy/hardhat",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "check-types": "tsc --noEmit --incremental",
     "compile": "hardhat compile",

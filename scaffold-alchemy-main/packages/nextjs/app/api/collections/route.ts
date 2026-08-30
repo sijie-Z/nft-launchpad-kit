@@ -73,10 +73,28 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, symbol, description, maxSupply, mintPrice, maxPerWallet, ownerAddress, coverImage } = body;
+  const {
+    name,
+    symbol,
+    description,
+    maxSupply,
+    mintPrice,
+    maxPerWallet,
+    ownerAddress,
+    coverImage,
+    contractAddress,
+    chainId,
+    baseURI,
+  } = body;
 
   if (!name || !symbol || !maxSupply || !mintPrice || !ownerAddress) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  // Optional: link a deployed contract (creator-wizard flow, see #34).
+  // When present, the address must be a valid 0x… checksummed/hex address.
+  if (contractAddress && !/^0x[a-fA-F0-9]{40}$/.test(contractAddress)) {
+    return NextResponse.json({ error: "Invalid contract address" }, { status: 400 });
   }
 
   let user = await prisma.user.findUnique({ where: { address: ownerAddress.toLowerCase() } });
@@ -93,6 +111,9 @@ export async function POST(req: NextRequest) {
       mintPrice: mintPrice.toString(),
       maxPerWallet: maxPerWallet || 5,
       coverImage,
+      contractAddress: contractAddress ? contractAddress.toLowerCase() : null,
+      chainId: chainId || 11155111,
+      baseURI: baseURI || null,
       ownerId: user.id,
     },
   });

@@ -176,4 +176,60 @@ describe("POST /api/collections", () => {
     expect(res.status).toBe(201);
     expect(mockCreate).toHaveBeenCalledTimes(2); // user + collection
   });
+
+  it("links contractAddress + chainId when created via the Factory wizard", async () => {
+    const fakeUser = { id: "user-1", address: "0x1234" };
+    mockFindUnique.mockResolvedValueOnce(fakeUser);
+    mockCreate.mockResolvedValueOnce({ id: "col-1" });
+
+    const res = await POST(
+      makePostRequest({
+        name: "Agent Club",
+        symbol: "AGT",
+        maxSupply: 1000,
+        mintPrice: "10000000000000000",
+        ownerAddress: "0x1234",
+        contractAddress: "0xAbC1234567890123456789012345678901234567",
+        chainId: 31337,
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    const createData = mockCreate.mock.calls[0][0].data;
+    expect(createData.contractAddress).toBe("0xabc1234567890123456789012345678901234567"); // lowercased
+    expect(createData.chainId).toBe(31337);
+  });
+
+  it("rejects an invalid contract address", async () => {
+    const res = await POST(
+      makePostRequest({
+        name: "T",
+        symbol: "T",
+        maxSupply: 1,
+        mintPrice: "1",
+        ownerAddress: "0x1234",
+        contractAddress: "not-an-address",
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain("Invalid contract address");
+  });
+
+  it("defaults chainId to 11155111 (Sepolia) when absent", async () => {
+    mockFindUnique.mockResolvedValueOnce({ id: "user-1", address: "0x1234" });
+    mockCreate.mockResolvedValueOnce({ id: "col-1" });
+
+    await POST(
+      makePostRequest({
+        name: "T",
+        symbol: "T",
+        maxSupply: 1,
+        mintPrice: "1",
+        ownerAddress: "0x1234",
+      }),
+    );
+
+    expect(mockCreate.mock.calls[0][0].data.chainId).toBe(11155111);
+  });
 });

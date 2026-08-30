@@ -21,6 +21,10 @@ const sepoliaRpcUrl = process.env.SEPOLIA_RPC_URL
   || alchemyRpcUrl
   || (alchemyApiKey ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}` : "");
 
+// Base Sepolia (#37) — agent economy's home turf; Alchemy supports it by default.
+const baseSepoliaRpcUrl = process.env.BASE_SEPOLIA_RPC_URL
+  || (alchemyApiKey ? `https://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}` : "");
+
 if (!privateKey) {
   console.warn("PRIVATE_KEY not found in .env file. Deploy to testnet will not work.");
 }
@@ -56,10 +60,16 @@ const config: HardhatUserConfig = {
       accounts: privateKey ? [privateKey] : [],
       chainId: 11155111,
     },
+    baseSepolia: {
+      url: baseSepoliaRpcUrl,
+      accounts: privateKey ? [privateKey] : [],
+      chainId: 84532,
+    },
   },
   etherscan: {
     apiKey: {
       sepolia: etherscanApiKey || "",
+      baseSepolia: process.env.BASESCAN_API_KEY || "",
     },
   },
   gasReporter: {

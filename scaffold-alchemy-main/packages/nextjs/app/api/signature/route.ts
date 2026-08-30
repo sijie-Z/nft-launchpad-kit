@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { privateKeyToAccount } from "viem/accounts";
+import { prisma } from "~~/lib/prisma";
 import { RATE_LIMITS, checkRateLimit, getClientIp } from "~~/lib/rateLimit";
 import { generateUID, signMintAuth712V2 } from "~~/utils/signature";
 
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { minter, quantity, maxMint, deadline, pricePerToken, contractAddress, chainId } = body;
+    const { minter, quantity, maxMint, deadline, pricePerToken, contractAddress, chainId, agentAddress } = body;
 
     // Validation
     if (!minter || !quantity || !maxMint || !deadline || !contractAddress || !chainId) {
@@ -69,6 +70,30 @@ export async function POST(req: NextRequest) {
       contractAddress,
       chainId: Number(chainId),
     });
+
+    // Agent identity integration (#40): when the caller identifies an agent,
+    // record the grant as an auditable issuance event (off-chain half of the
+    // trust trail — the on-chain half is the UID one-time use).
+    if (agentAddress && /^0x[a-fA-F0-9]{40}$/.test(agentAddress)) {
+      try {
+        const agent = await prisma.agent.findUnique({ where: { address: agentAddress.toLowerCase() } });
+        if (agent) {
+          await prisma.agentGrant.create({
+            data: {
+              agentId: agent.id,
+              minter: minter.toLowerCase(),
+              quantity: Number(quantity),
+              pricePerToken: pricePerToken ? String(pricePerToken) : null,
+              deadline: Number(deadline),
+              uid,
+              collectionAddress: contractAddress.toLowerCase(),
+            },
+          });
+        }
+      } catch {
+        // Audit recording is best-effort — never fail the signing request for it.
+      }
+    }
 
     return NextResponse.json({
       signature,

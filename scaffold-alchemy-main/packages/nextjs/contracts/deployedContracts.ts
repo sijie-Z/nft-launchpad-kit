@@ -2160,6 +2160,31 @@ const deployedContracts = {
 ]
       ,
     },
+    NFTLaunchpadKitFactory: {
+      address: "0x1e320041d3106022965C7846EE7bcbceab65a8e1",
+      abi: [{"inputs":[{"internalType":"address","name":"_implementation","type":"address"},{"internalType":"address","name":"_owner","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+        {"inputs":[],"name":"DeploymentFailed","type":"error"},
+        {"inputs":[],"name":"FailedDeployment","type":"error"},
+        {"inputs":[{"internalType":"uint256","name":"balance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"InsufficientBalance","type":"error"},
+        {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+        {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+        {"inputs":[],"name":"ZeroAddress","type":"error"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"cloneAddress","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"string","name":"name","type":"string"},{"indexed":false,"internalType":"string","name":"symbol","type":"string"},{"indexed":false,"internalType":"uint256","name":"maxSupply","type":"uint256"}],"name":"CollectionCloned","type":"event"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+        {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"allCollections","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"uint256","name":"maxSupply","type":"uint256"},{"internalType":"uint256","name":"maxPerWallet","type":"uint256"},{"internalType":"uint256","name":"mintPrice","type":"uint256"}],"name":"deployCollection","outputs":[{"internalType":"address","name":"clone","type":"address"}],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"},{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"uint256","name":"maxSupply","type":"uint256"},{"internalType":"uint256","name":"maxPerWallet","type":"uint256"},{"internalType":"uint256","name":"mintPrice","type":"uint256"}],"name":"deployCollectionDeterministic","outputs":[{"internalType":"address","name":"clone","type":"address"}],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"uint256","name":"offset","type":"uint256"},{"internalType":"uint256","name":"limit","type":"uint256"}],"name":"getAllCollections","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"getCollectionCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"address","name":"_owner","type":"address"}],"name":"getCollectionsByOwner","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"ownerCollections","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"}],"name":"predictCollectionAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"address","name":"_implementation","type":"address"}],"name":"setImplementation","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+    },
   },
   31337: {
     NFTLaunchpadKit: {
@@ -4316,6 +4341,35 @@ const deployedContracts = {
 ]
       ,
     },
+    NFTLaunchpadKitFactory: {
+      address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      abi: [{"inputs":[{"internalType":"address","name":"_implementation","type":"address"},{"internalType":"address","name":"_owner","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+        {"inputs":[],"name":"DeploymentFailed","type":"error"},
+        {"inputs":[],"name":"FailedDeployment","type":"error"},
+        {"inputs":[{"internalType":"uint256","name":"balance","type":"uint256"},{"internalType":"uint256","name":"needed","type":"uint256"}],"name":"InsufficientBalance","type":"error"},
+        {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+        {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+        {"inputs":[],"name":"ZeroAddress","type":"error"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"cloneAddress","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"string","name":"name","type":"string"},{"indexed":false,"internalType":"string","name":"symbol","type":"string"},{"indexed":false,"internalType":"uint256","name":"maxSupply","type":"uint256"}],"name":"CollectionCloned","type":"event"},
+        {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+        {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"allCollections","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"uint256","name":"maxSupply","type":"uint256"},{"internalType":"uint256","name":"maxPerWallet","type":"uint256"},{"internalType":"uint256","name":"mintPrice","type":"uint256"}],"name":"deployCollection","outputs":[{"internalType":"address","name":"clone","type":"address"}],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"},{"internalType":"string","name":"name_","type":"string"},{"internalType":"string","name":"symbol_","type":"string"},{"internalType":"uint256","name":"maxSupply","type":"uint256"},{"internalType":"uint256","name":"maxPerWallet","type":"uint256"},{"internalType":"uint256","name":"mintPrice","type":"uint256"}],"name":"deployCollectionDeterministic","outputs":[{"internalType":"address","name":"clone","type":"address"}],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"uint256","name":"offset","type":"uint256"},{"internalType":"uint256","name":"limit","type":"uint256"}],"name":"getAllCollections","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"getCollectionCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"address","name":"_owner","type":"address"}],"name":"getCollectionsByOwner","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"implementation","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"ownerCollections","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[{"internalType":"bytes32","name":"salt","type":"bytes32"}],"name":"predictCollectionAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+        {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"address","name":"_implementation","type":"address"}],"name":"setImplementation","outputs":[],"stateMutability":"nonpayable","type":"function"},
+        {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+    },
+  },
+  84532: {
+    // Base Sepolia (#37) — addresses are written here after the first deploy:
+    //   yarn workspace @scaffold-alchemy/hardhat deploy --network baseSepolia
   },
 } as const;
 

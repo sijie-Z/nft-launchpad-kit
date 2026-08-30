@@ -1,11 +1,12 @@
 {
   "name": "scaffold-alchemy",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "workspaces": {
     "packages": [
       "packages/hardhat",
-      "packages/nextjs"
+      "packages/nextjs",
+      "examples/agent"
     ]
   },
   "scripts": {
@@ -45,7 +46,9 @@
     "test": "yarn hardhat:test",
     "vercel": "yarn workspace @scaffold-alchemy/nextjs vercel",
     "vercel:yolo": "yarn workspace @scaffold-alchemy/nextjs vercel:yolo",
-    "verify": "yarn hardhat:verify"
+    "verify": "yarn hardhat:verify",
+    "deploy:base": "yarn workspace @scaffold-alchemy/hardhat deploy --network baseSepolia",
+    "verify:base": "yarn workspace @scaffold-alchemy/hardhat hardhat-verify --network baseSepolia"
   },
   "packageManager": "yarn@3.2.3",
   "devDependencies": {

@@ -5,6 +5,7 @@ import { formatEther, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { AdminCharts } from "~~/components/AdminCharts";
 import { AdminCollectionSelector } from "~~/components/AdminCollectionSelector";
+import CreateCollection from "~~/components/CreateCollection";
 import { AdminDashboard } from "~~/components/AdminDashboard";
 import { AdminEventLog } from "~~/components/AdminEventLog";
 import { WhitelistManager } from "~~/components/WhitelistManager";
@@ -70,9 +71,10 @@ function ConfirmDialog({
   );
 }
 
-type Tab = "sale" | "auction" | "whitelist" | "royalty" | "payout" | "signer" | "erc20" | "withdraw";
+type Tab = "create" | "sale" | "auction" | "whitelist" | "royalty" | "payout" | "signer" | "erc20" | "withdraw";
 
 const TABS: { key: Tab; icon: string; label: string; desc: string }[] = [
+  { key: "create", icon: "🚀", label: "创建集合", desc: "No-code wizard — deploy a new collection via the Factory" },
   { key: "sale", icon: "⚡", label: "Sale Control", desc: "Toggle sale states, price, limits, metadata" },
   { key: "auction", icon: "📉", label: "Dutch Auction", desc: "Configure auction pricing parameters" },
   { key: "whitelist", icon: "📋", label: "Whitelist", desc: "Manage Merkle root for allowlist" },
@@ -296,6 +298,15 @@ export default function AdminPage() {
             </h2>
             <p className="text-sm text-base-content/40 mt-0.5">{meta.desc}</p>
           </div>
+
+          {tab === "create" && (
+            <CreateCollection
+              onCreated={id => {
+                setSelectedCollection(id);
+                setTab("sale");
+              }}
+            />
+          )}
 
           {tab === "sale" && (
             <div className="space-y-5">
