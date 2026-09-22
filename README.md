@@ -128,6 +128,11 @@ initialization guards · Slither-reviewed · bijective reveal shuffle.
 | Backend | Next.js API routes · Prisma 5 · SQLite |
 | Indexing | The Graph subgraph |
 
+## Planning & handoff
+
+Project roadmap, strategy, and the resume-here handoff live in
+[`docs/planning/`](docs/planning/README.md).
+
 ## License
 
 MIT
