@@ -11,7 +11,7 @@
 | **3️⃣** | [PHASE1_PLAN.md](PHASE1_PLAN.md) | 详细执行计划（SDK + 双池验证，含停止条件） |
 | **4️⃣** | [STRATEGY.md](STRATEGY.md) | 战略：为什么是 Agent 原生发行、天花板在哪 |
 | 参考 | [PROBLEMS.md](PROBLEMS.md) · [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) · [NEXT_STEPS.md](NEXT_STEPS.md) | 历史问题清单、17-issue 路线图、方向分析 |
-| 存档 | [PROJECT.md](PROJECT.md) · [memory/](memory/) | 项目历史快照 · Claude 记忆备份 |
+| 存档 | [PROJECT.md](../PROJECT.md) · [memory/](memory/) | 项目历史快照（仓库根目录） · Claude 记忆备份 |
 
 ## 一句话现状
 
