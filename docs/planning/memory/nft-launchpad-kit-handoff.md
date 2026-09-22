@@ -10,9 +10,9 @@ metadata:
 
 NFT Launchpad Kit 项目状态（2026-09-02 保存点，用户因工作繁忙暂停）：
 
-**两个仓库**：
+**一个仓库**（代码 + 规划文档都在里面）：
 - 代码（公开）：https://github.com/sijie-Z/nft-launchpad-kit（main = 发布，develop = 开发）
-- 规划文档（私有）：https://github.com/sijie-Z/nft-launchpad-kit-planning（HANDOFF.md 是恢复入口）
+- 规划文档：**同一个仓库**的 docs/planning/ 目录（README.md 是索引，HANDOFF.md 是恢复入口）
 
 **已完成**：v1.0.0 发布 · SDK 上线 npm（`@nft-launchpad-kit/sdk` 0.1.2，ESM+CJS）· 204+ 测试全绿 · CI 三 Job（合约/前端/子图）· 池 A/B 测试协议已写 · 部署流水线就绪
 
