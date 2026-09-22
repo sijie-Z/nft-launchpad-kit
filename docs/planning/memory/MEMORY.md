@@ -1,0 +1,4 @@
+- [Research first before building](research-first-before-building.md) — 用户要求实现前先调研 GitHub 现有轮子
+- [NFT Launchpad AI-native direction](nft-launchpad-ai-native-direction.md) — 项目战略：作品+生意、agent 原生发行、M4 里程碑
+- [Phase 1 plan approved](phase1-plan-approved.md) — SDK MVP + 双池验证执行基线，关键决策与施工边界
+- [Project handoff snapshot](nft-launchpad-kit-handoff.md) — 2026-09-02 保存点：仓库地址、卡点（测试币）、恢复步骤
